@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, Menu } from 'electron';
 import path from 'path';
 import fs from 'fs';
 
@@ -59,9 +59,61 @@ function sendPendingFile() {
   }
 }
 
+async function openFileDialogAction() {
+  const result = await dialog.showOpenDialog(mainWindow!, {
+    properties: ['openFile'],
+    filters: [
+      { name: 'Markdown', extensions: ['md', 'markdown', 'mdown', 'mkd'] }
+    ]
+  });
+  if (!result.canceled && result.filePaths.length > 0) {
+    mainWindow!.webContents.send('open-file', result.filePaths[0]);
+  }
+}
+
+function buildMenu() {
+  const template: Electron.MenuItemConstructorOptions[] = process.platform === 'darwin'
+    ? [{ role: 'appMenu' as const }]
+    : [];
+
+  template.push(
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'Open Markdown File...',
+          accelerator: 'CmdOrCtrl+O',
+          click: () => openFileDialogAction()
+        },
+        { type: 'separator' },
+        process.platform === 'darwin'
+          ? { role: 'close' as const }
+          : { role: 'quit' as const }
+      ]
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' as const },
+        { role: 'forceReload' as const },
+        { role: 'toggleDevTools' as const },
+        { type: 'separator' },
+        { role: 'resetZoom' as const },
+        { role: 'zoomIn' as const },
+        { role: 'zoomOut' as const },
+        { type: 'separator' },
+        { role: 'togglefullscreen' as const }
+      ]
+    }
+  );
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
 app.whenReady().then(() => {
   createWindow();
   setupFileAssociation();
+  buildMenu();
   mainWindow?.webContents.once('did-finish-load', sendPendingFile);
 
   app.on('activate', () => {
@@ -100,7 +152,6 @@ ipcMain.handle('open-file-dialog', async () => {
   }
   return null;
 });
-
 ipcMain.handle('read-file', async (event, filePath: string) => {
   try {
     const content = fs.readFileSync(filePath, 'utf-8');

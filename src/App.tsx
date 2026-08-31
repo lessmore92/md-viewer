@@ -17,7 +17,13 @@ const emptyDoc: DocState = {
 
 function App() {
   const [doc, setDoc] = useState<DocState>(emptyDoc);
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('md-viewer-dark') === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   const loadFile = useCallback(async (filePath: string) => {
     try {
@@ -65,6 +71,11 @@ function App() {
     } else {
       document.documentElement.classList.remove('dark');
     }
+    try {
+      localStorage.setItem('md-viewer-dark', String(dark));
+    } catch {
+      /* ignore */
+    }
   }, [dark]);
 
   return (
@@ -78,11 +89,7 @@ function App() {
         <div className="flex items-center gap-2">
           <button
             onClick={openDialog}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              dark
-                ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                : 'bg-blue-600 hover:bg-blue-500 text-white'
-            }`}
+            className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors bg-blue-600 hover:bg-blue-500 text-white"
           >
             باز کردن فایل...
           </button>
