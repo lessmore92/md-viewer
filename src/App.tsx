@@ -1,0 +1,129 @@
+import React from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+interface DocState {
+  path: string | null;
+  content: string;
+  fileName: string;
+  error: string | null;
+}
+
+const emptyDoc: DocState = {
+  path: null,
+  content: '# MD Viewer\n\nبرای باز کردن یک فایل Markdown، از منوی **باز کردن فایل** استفاده کنید.\n\n```js\nconsole.log("Hello, World!"); // این بخش همیشه LTR نمایش داده می‌شود\n```\n\nمتن فارسی `inline code` و mixed **English** فقط در این حالت RTL/LTR درست نمایش داده می‌شود.',
+  fileName: '',
+  error: null
+};
+
+function App() {
+  const [doc, setDoc] = useState<DocState>(emptyDoc);
+  const [dark, setDark] = useState(false);
+  const [isMac, setIsMac] = useState(false);
+
+  const loadFile = useCallback(async (filePath: string) => {
+    try {
+      const api = (window as any).electronAPI;
+      const result = await api.readFile(filePath);
+      if (result.error) {
+        setDoc({ path: filePath, content: '', fileName: '', error: result.error });
+        return;
+      }
+      const name = await api.getFileName(filePath);
+      setDoc({ path: filePath, content: result.content, fileName: name, error: null });
+    } catch (err) {
+      setDoc({ path: null, content: '', fileName: '', error: (err as Error).message });
+    }
+  }, []);
+
+  useEffect(() => {
+    const api = (window as any).electronAPI;
+    if (!api) return;
+
+    setIsMac(navigator.platform.includes('Mac'));
+
+    api.onOpenFile((filePath: string) => {
+      loadFile(filePath);
+    });
+  }, [loadFile]);
+
+  const openDialog = async () => {
+    try {
+      const api = (window as any).electronAPI;
+      const filePath = await api.openFileDialog();
+      if (filePath) {
+        loadFile(filePath);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const toggleDark = () => {
+    setDark((d) => !d);
+  };
+
+  useEffect(() => {
+    if (dark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [dark]);
+
+  return (
+    <div className={`h-full flex flex-col ${dark ? 'dark bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'} transition-colors`}>
+      <header className={`flex items-center justify-between px-4 py-2 border-b select-none ${dark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+        <div className="flex items-center gap-3">
+          <span className="text-lg font-bold">📄</span>
+          <span className="font-semibold truncate">{doc.fileName || 'MD Viewer'}</span>
+          {doc.error && <span className="text-red-500 text-sm">خطا: {doc.error}</span>}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={openDialog}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              dark
+                ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                : 'bg-blue-600 hover:bg-blue-500 text-white'
+            }`}
+          >
+            باز کردن فایل...
+          </button>
+          <button
+            onClick={toggleDark}
+            title="تغییر حالت تیره/روشن"
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              dark
+                ? 'bg-gray-700 hover:bg-gray-600 text-gray-200'
+                : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+            }`}
+          >
+            {dark ? '☀️' : '🌙'}
+          </button>
+        </div>
+      </header>
+
+      <main className="flex-1 overflow-auto">
+        <div className="max-w-4xl mx-auto px-8 py-8">
+          <div className="markdown-body">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]}
+            >
+              {doc.content}
+            </ReactMarkdown>
+          </div>
+        </div>
+      </main>
+
+      <footer className={`px-4 py-2 text-xs text-center border-t ${dark ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500'}`}>
+        MD Viewer — مشاهده‌گر Markdown با پشتیبانی RTL
+      </footer>
+    </div>
+  );
+}
+
+export default App;
