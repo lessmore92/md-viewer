@@ -4,14 +4,27 @@ import { describe, expect, it } from 'vitest';
 import { isTrustedSender, parseExternalUrl } from '../../electron/security';
 
 describe('isTrustedSender', () => {
-  it('accepts only file URLs in packaged mode', () => {
-    expect(isTrustedSender('file:///C:/Program%20Files/MD%20Viewer/index.html', true)).toBe(true);
-    expect(isTrustedSender('https://example.com', true)).toBe(false);
+  const packagedRendererUrl = 'file:///D:/md-viewer/dist/index.html';
+  const developmentRendererUrl = 'http://localhost:5173/';
+
+  it('accepts the exact packaged renderer entry and its fragments', () => {
+    expect(isTrustedSender(packagedRendererUrl, packagedRendererUrl)).toBe(true);
+    expect(isTrustedSender(`${packagedRendererUrl}#readme`, packagedRendererUrl)).toBe(true);
   });
 
-  it('accepts the configured Vite origin in development', () => {
-    expect(isTrustedSender('http://localhost:5173', false)).toBe(true);
-    expect(isTrustedSender('http://localhost:5173/index.html', false)).toBe(true);
+  it.each([
+    'file:///D:/documents/README.md',
+    'file://localhost/D:/md-viewer/dist/index.html',
+    'file://fileserver/share/dist/index.html',
+    'file:///D:/md-viewer/dist/other.html',
+  ])('rejects unrelated packaged file sender %s', (url) => {
+    expect(isTrustedSender(url, packagedRendererUrl)).toBe(false);
+  });
+
+  it('accepts only the exact Vite application origin and path in development', () => {
+    expect(isTrustedSender(developmentRendererUrl, developmentRendererUrl)).toBe(true);
+    expect(isTrustedSender(`${developmentRendererUrl}#readme`, developmentRendererUrl)).toBe(true);
+    expect(isTrustedSender('http://localhost:5173/index.html', developmentRendererUrl)).toBe(false);
   });
 
   it.each([
@@ -21,7 +34,11 @@ describe('isTrustedSender', () => {
     'http://localhost:5173@evil.test',
     'not a URL',
   ])('rejects untrusted development sender %s', (url) => {
-    expect(isTrustedSender(url, false)).toBe(false);
+    expect(isTrustedSender(url, developmentRendererUrl)).toBe(false);
+  });
+
+  it('rejects a malformed trusted renderer URL', () => {
+    expect(isTrustedSender(developmentRendererUrl, 'not a URL')).toBe(false);
   });
 });
 

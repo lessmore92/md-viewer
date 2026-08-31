@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import type { DocumentPayload } from './contracts';
 
@@ -16,10 +16,11 @@ export async function readMarkdownDocument(filePath: string): Promise<DocumentPa
   }
 
   const resolvedFilePath = path.resolve(filePath);
-  const content = await readFile(resolvedFilePath, 'utf8');
+  const canonicalFilePath = await realpath(resolvedFilePath);
+  const content = await readFile(canonicalFilePath, 'utf8');
   const documentId = randomUUID();
 
-  documentRoots.set(documentId, path.dirname(resolvedFilePath));
+  documentRoots.set(documentId, path.dirname(canonicalFilePath));
 
   return {
     filePath: resolvedFilePath,
@@ -29,7 +30,10 @@ export async function readMarkdownDocument(filePath: string): Promise<DocumentPa
   };
 }
 
-export function resolveDocumentAsset(documentId: string, relativePath: string): string {
+export async function resolveDocumentAsset(
+  documentId: string,
+  relativePath: string,
+): Promise<string> {
   let decodedPath: string;
 
   try {
@@ -57,11 +61,18 @@ export function resolveDocumentAsset(documentId: string, relativePath: string): 
   }
 
   const resolvedPath = path.resolve(documentRoot, normalizedPath);
-  const relativeToRoot = path.relative(documentRoot, resolvedPath);
+  const lexicalRelativeToRoot = path.relative(documentRoot, resolvedPath);
 
-  if (path.isAbsolute(relativeToRoot) || relativeToRoot.startsWith('..')) {
+  if (path.isAbsolute(lexicalRelativeToRoot) || lexicalRelativeToRoot.startsWith('..')) {
     throw new Error('Asset path is outside the active document root.');
   }
 
-  return resolvedPath;
+  const canonicalPath = await realpath(resolvedPath);
+  const canonicalRelativeToRoot = path.relative(documentRoot, canonicalPath);
+
+  if (path.isAbsolute(canonicalRelativeToRoot) || canonicalRelativeToRoot.startsWith('..')) {
+    throw new Error('Asset path is outside the active document root.');
+  }
+
+  return canonicalPath;
 }

@@ -223,8 +223,8 @@ git commit -m "build: add quality tooling and heading model"
 
 - Produces: `DocumentPayload { filePath; fileName; content; documentId }`.
 - Produces: `readMarkdownDocument(filePath): Promise<DocumentPayload>`.
-- Produces: `resolveDocumentAsset(documentId, relativePath): string`; document roots remain private.
-- Produces: `isTrustedSender(url, packaged): boolean`.
+- Produces: `resolveDocumentAsset(documentId, relativePath): Promise<string>`; document roots remain private and canonical containment is enforced.
+- Produces: `isTrustedSender(url, trustedRendererUrl): boolean`.
 - Produces: `parseExternalUrl(value): URL | null`.
 
 - [ ] **Step 1: Write failing service tests in Node environment**
@@ -240,7 +240,7 @@ it('accepts all configured markdown extensions case-insensitively', async () => 
 
 it('rejects asset traversal outside the active document root', async () => {
   const { documentId } = await readMarkdownDocument(markdownFixturePath);
-  expect(() => resolveDocumentAsset(documentId, '..\\secret.txt')).toThrow(/outside/i);
+  await expect(resolveDocumentAsset(documentId, '..\\secret.txt')).rejects.toThrow(/outside/i);
 });
 
 it.each(['javascript:alert(1)', 'file:///etc/passwd', 'data:text/html,x'])(
@@ -283,11 +283,11 @@ export const IPC = {
 } as const;
 ```
 
-`isTrustedSender` accepts only `file:` in packaged mode and exactly `http://localhost:5173` in development. `parseExternalUrl` uses `new URL` and an exact protocol set of `http:`, `https:`, and `mailto:`.
+`isTrustedSender` compares a parsed sender URL with an explicit trusted renderer URL. In production, the trusted URL is the canonical packaged `dist/index.html` URL; reject non-empty `file:` hosts and any other local file path, while ignoring only fragment changes. In development, accept only the exact `http://localhost:5173` origin and application path. `parseExternalUrl` uses `new URL` and an exact protocol set of `http:`, `https:`, and `mailto:`.
 
 - [ ] **Step 4: Implement async document and asset services**
 
-Use `node:fs/promises`, `node:path`, and `node:crypto`. Reject non-Markdown extensions before reading. Track document roots in a `Map<string, string>` keyed by a random UUID. `resolveDocumentAsset` decodes and normalizes the relative path, resolves it against the stored root, and verifies containment using `path.relative`; absolute paths and paths whose relative value starts with `..` are rejected.
+Use `node:fs/promises`, `node:path`, and `node:crypto`. Reject non-Markdown extensions before reading. Track canonical document roots in a `Map<string, string>` keyed by a random UUID. `resolveDocumentAsset` decodes and normalizes the relative path, rejects absolute and parent-traversal paths, canonicalizes the existing target with asynchronous `realpath`, and verifies canonical containment using `path.relative`. A symlink or junction that resolves outside the registered root is rejected.
 
 - [ ] **Step 5: Run service tests and Electron type-check**
 
@@ -346,7 +346,7 @@ Expected: FAIL because the exported parser does not exist.
 
 - [ ] **Step 3: Replace unrestricted IPC with intent-specific handlers**
 
-In each `ipcMain.handle`, reject requests unless `isTrustedSender(event.senderFrame.url, app.isPackaged)` returns true. `document:select` owns the dialog selection and immediately returns `readMarkdownDocument(selectedPath)`. `navigation:open-external` parses the URL and calls `shell.openExternal(parsed.href)` only when accepted.
+In each `ipcMain.handle`, reject requests unless `isTrustedSender(event.senderFrame.url, trustedRendererUrl)` returns true. Production derives `trustedRendererUrl` from the canonical packaged `dist/index.html`; development uses `http://localhost:5173/`. `document:select` owns the dialog selection and immediately returns `readMarkdownDocument(selectedPath)`. `navigation:open-external` parses the URL and calls `shell.openExternal(parsed.href)` only when accepted.
 
 Register `md-asset` as a standard, secure custom scheme before `app.whenReady()`. Handle `md-asset://document/<documentId>/<relativePath>` by resolving the active document root and returning `net.fetch(pathToFileURL(resolvedPath).href)`. Reject missing IDs, traversal, and directories with a 404 response.
 
@@ -356,7 +356,7 @@ For every app window:
 
 ```ts
 mainWindow.webContents.on('will-navigate', (event, url) => {
-  if (!isTrustedSender(url, app.isPackaged)) event.preventDefault();
+  if (!isTrustedSender(url, trustedRendererUrl)) event.preventDefault();
 });
 mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
 mainWindow.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) =>

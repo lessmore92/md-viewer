@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -70,10 +70,13 @@ describe('resolveDocumentAsset', () => {
   it('resolves decoded relative assets against the stored document root', async () => {
     const directory = await createTemporaryDirectory();
     const filePath = path.join(directory, 'README.md');
+    const assetPath = path.join(directory, 'images', 'diagram.png');
+    await mkdir(path.dirname(assetPath));
     await writeFile(filePath, '# Assets', 'utf8');
+    await writeFile(assetPath, 'image', 'utf8');
     const document = await readMarkdownDocument(filePath);
 
-    expect(resolveDocumentAsset(document.documentId, 'images%2Fdiagram.png')).toBe(
+    await expect(resolveDocumentAsset(document.documentId, 'images%2Fdiagram.png')).resolves.toBe(
       path.resolve(directory, 'images', 'diagram.png'),
     );
   });
@@ -84,17 +87,55 @@ describe('resolveDocumentAsset', () => {
     await writeFile(filePath, '# Assets', 'utf8');
     const { documentId } = await readMarkdownDocument(filePath);
 
-    expect(() => resolveDocumentAsset(documentId, '..\\secret.txt')).toThrow(/outside/i);
+    await expect(resolveDocumentAsset(documentId, '..\\secret.txt')).rejects.toThrow(/outside/i);
   });
 
   it.each(['C:\\secret.txt', '/etc/passwd', '%2e%2e%5csecret.txt'])(
     'rejects absolute or encoded traversal asset path %s',
-    (relativePath) => {
-      expect(() => resolveDocumentAsset('unknown-document', relativePath)).toThrow(/outside/i);
+    async (relativePath) => {
+      await expect(resolveDocumentAsset('unknown-document', relativePath)).rejects.toThrow(
+        /outside/i,
+      );
     },
   );
 
-  it('rejects an unknown document identifier', () => {
-    expect(() => resolveDocumentAsset('unknown-document', 'image.png')).toThrow(/unknown/i);
+  it('rejects an unknown document identifier', async () => {
+    await expect(resolveDocumentAsset('unknown-document', 'image.png')).rejects.toThrow(/unknown/i);
+  });
+
+  it('rejects an in-root link whose target is outside the canonical document root', async ({
+    skip,
+  }) => {
+    const directory = await createTemporaryDirectory();
+    const outsideDirectory = await createTemporaryDirectory();
+    const filePath = path.join(directory, 'README.md');
+    const outsideAsset = path.join(outsideDirectory, 'secret.txt');
+    const linkedDirectory = path.join(directory, 'linked-assets');
+    await writeFile(filePath, '# Assets', 'utf8');
+    await writeFile(outsideAsset, 'secret', 'utf8');
+
+    try {
+      await symlink(
+        outsideDirectory,
+        linkedDirectory,
+        process.platform === 'win32' ? 'junction' : 'dir',
+      );
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        ['EACCES', 'EPERM', 'ENOTSUP'].includes(String(error.code))
+      ) {
+        skip();
+        return;
+      }
+      throw error;
+    }
+
+    const { documentId } = await readMarkdownDocument(filePath);
+
+    await expect(resolveDocumentAsset(documentId, 'linked-assets/secret.txt')).rejects.toThrow(
+      /outside/i,
+    );
   });
 });
