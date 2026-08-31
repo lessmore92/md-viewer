@@ -17,6 +17,17 @@ console.log(greeting); // این بخش با اینکه فارسی دارد، ه
 
 متن فارسی با SQL تلفیق می‌شود مثل `WHERE user_id = 42` و سپس ادامه متن فارسی.
 
+## تشخیص جهت به ازای هر خط
+
+در پاراگراف زیر، هر خط به‌طور جداگانه جهت‌یابی می‌شود:
+
+This is an English line and should be left-to-right
+این یک خط فارسی است و باید راست‌به‌چپ باشد
+SELECT * FROM users WHERE active = 1
+در این خط، متن فارسی رایج غالب است و باید راست‌چین شود
+Another English-only line right here
+
+
 - این یک لیست است
   - زیر مورد انگلیسی mixed content اینجا
 - مورد دوم
