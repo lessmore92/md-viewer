@@ -1,8 +1,5 @@
-import React from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import Markdown from './components/Markdown';
 
 interface DocState {
   path: string | null;
@@ -21,7 +18,6 @@ const emptyDoc: DocState = {
 function App() {
   const [doc, setDoc] = useState<DocState>(emptyDoc);
   const [dark, setDark] = useState(false);
-  const [isMac, setIsMac] = useState(false);
 
   const loadFile = useCallback(async (filePath: string) => {
     try {
@@ -41,8 +37,6 @@ function App() {
   useEffect(() => {
     const api = (window as any).electronAPI;
     if (!api) return;
-
-    setIsMac(navigator.platform.includes('Mac'));
 
     api.onOpenFile((filePath: string) => {
       loadFile(filePath);
@@ -109,12 +103,7 @@ function App() {
       <main className="flex-1 overflow-auto">
         <div className="max-w-4xl mx-auto px-8 py-8">
           <div className="markdown-body">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeRaw]}
-            >
-              {doc.content}
-            </ReactMarkdown>
+            <Markdown content={doc.content} />
           </div>
         </div>
       </main>
