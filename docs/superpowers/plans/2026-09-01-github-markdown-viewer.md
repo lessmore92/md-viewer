@@ -223,7 +223,7 @@ git commit -m "build: add quality tooling and heading model"
 
 - Produces: `DocumentPayload { filePath; fileName; content; documentId }`.
 - Produces: `readMarkdownDocument(filePath): Promise<DocumentPayload>`.
-- Produces: `resolveDocumentAsset(activeRoot, relativePath): string`.
+- Produces: `resolveDocumentAsset(documentId, relativePath): string`; document roots remain private.
 - Produces: `isTrustedSender(url, packaged): boolean`.
 - Produces: `parseExternalUrl(value): URL | null`.
 
@@ -238,8 +238,9 @@ it('accepts all configured markdown extensions case-insensitively', async () => 
   }
 });
 
-it('rejects asset traversal outside the active document root', () => {
-  expect(() => resolveDocumentAsset('C:\\docs', '..\\secret.txt')).toThrow(/outside/i);
+it('rejects asset traversal outside the active document root', async () => {
+  const { documentId } = await readMarkdownDocument(markdownFixturePath);
+  expect(() => resolveDocumentAsset(documentId, '..\\secret.txt')).toThrow(/outside/i);
 });
 
 it.each(['javascript:alert(1)', 'file:///etc/passwd', 'data:text/html,x'])(

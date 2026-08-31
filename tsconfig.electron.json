@@ -6,10 +6,11 @@
     "outDir": "dist-electron",
     "rootDir": "electron",
     "strict": true,
+    "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "types": ["node"]
   },
-  "include": ["electron"]
+  "include": ["electron/**/*.ts"]
 }
