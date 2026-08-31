@@ -11,5 +11,11 @@ export function detectDirection(text: string): 'rtl' | 'ltr' {
   }
 
   if (rtlCount === 0 && ltrCount === 0) return 'ltr';
-  return rtlCount >= ltrCount ? 'rtl' : 'ltr';
+
+  // RTL words get a higher weight so that Persian sentences containing
+  // inline English/code tokens (e.g. "mixed text با کد npm install")
+  // are still detected as RTL. Without this, the Latin characters in code
+  // tokens would outvote the Persian text and wrongly flip the line to LTR.
+  const RTL_WEIGHT = 5;
+  return rtlCount * RTL_WEIGHT >= ltrCount ? 'rtl' : 'ltr';
 }
