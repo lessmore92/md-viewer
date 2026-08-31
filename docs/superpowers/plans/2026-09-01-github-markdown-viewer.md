@@ -82,7 +82,7 @@ playwright.config.ts
 Run:
 
 ```powershell
-npm install electron@^44.0.0 react-markdown@^10.1.0 github-markdown-css@^5.8.1 github-slugger@^2.0.0 rehype-highlight@^7.0.2 rehype-sanitize@^6.0.2 unified@^11.0.5 remark-parse@^11.0.0 unist-util-visit@^5.0.0 mdast-util-to-string@^4.0.0
+npm install electron@^44.0.0 react-markdown@^10.1.0 github-markdown-css@^5.8.1 github-slugger@^2.0.0 rehype-highlight@^7.0.2 rehype-sanitize@^6.0.0 unified@^11.0.5 remark-parse@^11.0.0 unist-util-visit@^5.0.0 mdast-util-to-string@^4.0.0
 npm install --save-dev electron-builder@^26.0.0 vitest@^3.2.4 jsdom@^26.1.0 @testing-library/react@^16.3.0 @testing-library/user-event@^14.6.1 @testing-library/jest-dom@^6.8.0 eslint@^9.34.0 @eslint/js@^9.34.0 typescript-eslint@^8.41.0 eslint-plugin-react-hooks@^5.2.0 eslint-plugin-react-refresh@^0.4.20 prettier@^3.6.2 @playwright/test@^1.55.0
 ```
 
