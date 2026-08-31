@@ -15,7 +15,9 @@
   font-display: swap;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   margin: 0;
 }
@@ -56,10 +58,19 @@ body {
   padding-bottom: 0.3em;
   border-bottom: 1px solid rgba(128, 128, 128, 0.3);
 }
-.markdown-body h3 { font-size: 1.25em; }
-.markdown-body h4 { font-size: 1em; }
-.markdown-body h5 { font-size: 0.875em; }
-.markdown-body h6 { font-size: 0.85em; color: #666; }
+.markdown-body h3 {
+  font-size: 1.25em;
+}
+.markdown-body h4 {
+  font-size: 1em;
+}
+.markdown-body h5 {
+  font-size: 0.875em;
+}
+.markdown-body h6 {
+  font-size: 0.85em;
+  color: #666;
+}
 
 .markdown-body p {
   margin-top: 0;
@@ -157,7 +168,7 @@ body {
   margin: 24px 0;
 }
 
-.markdown-body input[type="checkbox"] {
+.markdown-body input[type='checkbox'] {
   margin-left: 8px;
   margin-right: 4px;
 }

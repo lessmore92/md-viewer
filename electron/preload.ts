@@ -7,5 +7,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAppPath: () => ipcRenderer.invoke('get-app-path'),
   onOpenFile: (callback: (filePath: string) => void) => {
     ipcRenderer.on('open-file', (event, filePath) => callback(filePath));
-  }
+  },
 });

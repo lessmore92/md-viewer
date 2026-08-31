@@ -63,6 +63,7 @@ playwright.config.ts
 ### Task 1: Toolchain and Heading Model
 
 **Files:**
+
 - Modify: `package.json`
 - Modify: `package-lock.json`
 - Create: `eslint.config.js`
@@ -73,6 +74,7 @@ playwright.config.ts
 - Create: `src/markdown/headings.test.ts`
 
 **Interfaces:**
+
 - Produces: `HeadingItem { id: string; depth: 1 | 2 | 3; text: string; children: HeadingItem[] }`.
 - Produces: `extractHeadings(markdown: string): HeadingItem[]`.
 - Produces: `createHeadingIdPlugin(): (tree: Root) => void` for renderer IDs.
@@ -123,8 +125,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    clearMocks: true
-  }
+    clearMocks: true,
+  },
 });
 ```
 
@@ -140,19 +142,25 @@ describe('extractHeadings', () => {
   it('builds an H1-H3 tree and ignores deeper headings', () => {
     expect(extractHeadings('# Intro\n## Install\n### Windows\n#### Detail\n## API')).toEqual([
       {
-        id: 'intro', depth: 1, text: 'Intro', children: [
-          { id: 'install', depth: 2, text: 'Install', children: [
-            { id: 'windows', depth: 3, text: 'Windows', children: [] }
-          ] },
-          { id: 'api', depth: 2, text: 'API', children: [] }
-        ]
-      }
+        id: 'intro',
+        depth: 1,
+        text: 'Intro',
+        children: [
+          {
+            id: 'install',
+            depth: 2,
+            text: 'Install',
+            children: [{ id: 'windows', depth: 3, text: 'Windows', children: [] }],
+          },
+          { id: 'api', depth: 2, text: 'API', children: [] },
+        ],
+      },
     ]);
   });
 
   it('uses deterministic GitHub slugs for duplicates and Persian headings', () => {
     expect(extractHeadings('# نصب\n## نصب\n## Hello, World!').map(flattenIds)).toEqual([
-      ['نصب', 'نصب-1', 'hello-world']
+      ['نصب', 'نصب-1', 'hello-world'],
     ]);
   });
 });
@@ -202,6 +210,7 @@ git commit -m "build: add quality tooling and heading model"
 ### Task 2: Secure Document and URL Services
 
 **Files:**
+
 - Create: `electron/contracts.ts`
 - Create: `electron/document-service.ts`
 - Create: `electron/security.ts`
@@ -211,6 +220,7 @@ git commit -m "build: add quality tooling and heading model"
 - Modify: `vitest.config.ts`
 
 **Interfaces:**
+
 - Produces: `DocumentPayload { filePath; fileName; content; documentId }`.
 - Produces: `readMarkdownDocument(filePath): Promise<DocumentPayload>`.
 - Produces: `resolveDocumentAsset(activeRoot, relativePath): string`.
@@ -232,15 +242,19 @@ it('rejects asset traversal outside the active document root', () => {
   expect(() => resolveDocumentAsset('C:\\docs', '..\\secret.txt')).toThrow(/outside/i);
 });
 
-it.each(['javascript:alert(1)', 'file:///etc/passwd', 'data:text/html,x'])
-  ('rejects unsafe external URL %s', (value) => {
+it.each(['javascript:alert(1)', 'file:///etc/passwd', 'data:text/html,x'])(
+  'rejects unsafe external URL %s',
+  (value) => {
     expect(parseExternalUrl(value)).toBeNull();
-  });
+  },
+);
 
-it.each(['https://example.com', 'http://localhost:3000', 'mailto:test@example.com'])
-  ('accepts supported external URL %s', (value) => {
+it.each(['https://example.com', 'http://localhost:3000', 'mailto:test@example.com'])(
+  'accepts supported external URL %s',
+  (value) => {
     expect(parseExternalUrl(value)?.href).toBeTruthy();
-  });
+  },
+);
 ```
 
 Add temp-directory coverage proving `readMarkdownDocument` reads UTF-8 asynchronously and returns a stable opaque `documentId`, not the root directory.
@@ -264,7 +278,7 @@ export interface DocumentPayload {
 export const IPC = {
   selectDocument: 'document:select',
   openedDocument: 'document:opened',
-  openExternal: 'navigation:open-external'
+  openExternal: 'navigation:open-external',
 } as const;
 ```
 
@@ -292,12 +306,14 @@ git commit -m "feat: add secure document services"
 ### Task 3: Harden Electron Main and Preload
 
 **Files:**
+
 - Modify: `electron/main.ts`
 - Modify: `electron/preload.ts`
 - Modify: `src/vite-env.d.ts`
 - Create: `tests/electron/file-arguments.test.ts`
 
 **Interfaces:**
+
 - Consumes: `DocumentPayload`, `IPC`, `readMarkdownDocument`, `isTrustedSender`, and `parseExternalUrl` from Task 2.
 - Produces renderer API:
 
@@ -315,10 +331,10 @@ interface ElectronAPI {
 Extract and test `findMarkdownArgument(argv: string[]): string | null`:
 
 ```ts
-expect(findMarkdownArgument(['electron.exe', 'app', 'C:\\docs\\README.markdown']))
-  .toBe('C:\\docs\\README.markdown');
-expect(findMarkdownArgument(['electron.exe', 'app', '--inspect=9229']))
-  .toBeNull();
+expect(findMarkdownArgument(['electron.exe', 'app', 'C:\\docs\\README.markdown'])).toBe(
+  'C:\\docs\\README.markdown',
+);
+expect(findMarkdownArgument(['electron.exe', 'app', '--inspect=9229'])).toBeNull();
 ```
 
 - [ ] **Step 2: Run the test and verify RED**
@@ -342,7 +358,9 @@ mainWindow.webContents.on('will-navigate', (event, url) => {
   if (!isTrustedSender(url, app.isPackaged)) event.preventDefault();
 });
 mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-mainWindow.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
+mainWindow.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) =>
+  callback(false),
+);
 ```
 
 Keep dev tools available only in development.
@@ -355,10 +373,11 @@ Acquire `app.requestSingleInstanceLock()` before `whenReady`. If acquisition fai
 
 ```ts
 onDocumentOpened: (callback) => {
-  const listener = (_event: Electron.IpcRendererEvent, document: DocumentPayload) => callback(document);
+  const listener = (_event: Electron.IpcRendererEvent, document: DocumentPayload) =>
+    callback(document);
   ipcRenderer.on(IPC.openedDocument, listener);
   return () => ipcRenderer.removeListener(IPC.openedDocument, listener);
-}
+};
 ```
 
 `assetUrl` only URL-encodes `documentId` and path components into the `md-asset` scheme; it exposes no Node or IPC primitive.
@@ -385,6 +404,7 @@ git commit -m "fix: harden Electron navigation and IPC"
 ### Task 4: GitHub-compatible Markdown Pipeline
 
 **Files:**
+
 - Create: `src/markdown/links.ts`
 - Create: `src/markdown/links.test.ts`
 - Create: `src/markdown/remarkAlerts.ts`
@@ -397,6 +417,7 @@ git commit -m "fix: harden Electron navigation and IPC"
 - Delete: `src/components/Markdown.tsx`
 
 **Interfaces:**
+
 - Consumes: `createHeadingIdPlugin`, `extractHeadings`, and `window.electronAPI`.
 - Produces: `MarkdownView({ content, documentId, onHeadingsChange })`.
 - Produces: `classifyLink(href): 'fragment' | 'external' | 'relative' | 'unsafe'`.
@@ -405,13 +426,18 @@ git commit -m "fix: harden Electron navigation and IPC"
 
 Cover exact semantics:
 
-```tsx
-render(<MarkdownView content={'# Title\n\nUse `npm test`.\n\n```ts\nconst x = 1\n```\n\n| H |\n|---|\n| C |'} documentId="doc-1" />);
+````tsx
+render(
+  <MarkdownView
+    content={'# Title\n\nUse `npm test`.\n\n```ts\nconst x = 1\n```\n\n| H |\n|---|\n| C |'}
+    documentId="doc-1"
+  />,
+);
 expect(screen.getByRole('heading', { level: 1, name: 'Title' })).toHaveAttribute('id', 'title');
 expect(screen.getByText('npm test').closest('pre')).toBeNull();
 expect(screen.getByText('const x = 1').closest('pre')).not.toBeNull();
 expect(screen.getByRole('columnheader', { name: 'H' }).tagName).toBe('TH');
-```
+````
 
 Add cases for duplicate heading IDs, a sanitized `<script>`, stripped `onclick`, rejected `javascript:` links, safe raw `<details>`, GitHub NOTE/WARNING alerts, relative image rewriting, external-link delegation, and fragment scrolling.
 
@@ -430,7 +456,7 @@ Expected: FAIL because the new modules do not exist.
 Visit blockquotes and recognize only a first text prefix matching:
 
 ```ts
-/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?:\r?\n|\s+|$)/
+/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?:\r?\n|\s+|$)/;
 ```
 
 Remove the marker, set a safe `data-alert` value, and inject a title node with the Persian-neutral GitHub labels `Note`, `Tip`, `Important`, `Warning`, or `Caution`. Ordinary blockquotes remain unchanged.
@@ -477,6 +503,7 @@ git commit -m "feat: render sanitized GitHub-style Markdown"
 ### Task 5: GitHub Surface and Right-side Table of Contents
 
 **Files:**
+
 - Create: `src/components/Toolbar.tsx`
 - Create: `src/components/TableOfContents.tsx`
 - Create: `src/components/TableOfContents.test.tsx`
@@ -490,6 +517,7 @@ git commit -m "feat: render sanitized GitHub-style Markdown"
 - Modify: `src/index.css`
 
 **Interfaces:**
+
 - Consumes: `DocumentPayload`, `HeadingItem`, `extractHeadings`, and `MarkdownView`.
 - Produces: `TableOfContents({ headings, activeId, onNavigate })`.
 - Produces: `SidebarDrawer({ open, onClose, children })`.
@@ -559,6 +587,7 @@ git commit -m "feat: add GitHub layout and heading sidebar"
 ### Task 6: CSP, Packaging, Associations, and Documentation
 
 **Files:**
+
 - Modify: `index.html`
 - Modify: `package.json`
 - Modify: `README.md`
@@ -567,6 +596,7 @@ git commit -m "feat: add GitHub layout and heading sidebar"
 - Modify: `build/icon.png` only if packaging proves it invalid
 
 **Interfaces:**
+
 - Consumes: completed renderer and Electron lifecycle.
 - Produces: packaged Windows application with consistent file associations.
 
@@ -575,8 +605,10 @@ git commit -m "feat: add GitHub layout and heading sidebar"
 Use a production-compatible policy equivalent to:
 
 ```html
-<meta http-equiv="Content-Security-Policy"
-  content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http: md-asset:; font-src 'self'; connect-src 'self' http://localhost:5173 ws://localhost:5173; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+<meta
+  http-equiv="Content-Security-Policy"
+  content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http: md-asset:; font-src 'self'; connect-src 'self' http://localhost:5173 ws://localhost:5173; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'"
+/>
 ```
 
 If Vite development requires a narrower environment-specific adjustment, generate it through Vite's HTML transform; do not broaden production `script-src`.
@@ -621,6 +653,7 @@ git commit -m "build: secure and document Windows packaging"
 ### Task 7: Electron End-to-End Verification
 
 **Files:**
+
 - Create: `tests/fixtures/readme.md`
 - Create: `tests/fixtures/local-image.png`
 - Create: `tests/e2e/app.spec.ts`
@@ -628,6 +661,7 @@ git commit -m "build: secure and document Windows packaging"
 - Modify: `package.json`
 
 **Interfaces:**
+
 - Consumes: packaged/development Electron entry point and typed UI controls.
 - Produces: automated critical-path proof for document opening, rendering, sidebar, theme, and external navigation delegation.
 

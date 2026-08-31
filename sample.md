@@ -5,7 +5,7 @@
 ## بخش کد (همیشه LTR)
 
 ```js
-const greeting = "Hello, World!";
+const greeting = 'Hello, World!';
 console.log(greeting); // این بخش با اینکه فارسی دارد، همیشه LTR است
 ```
 
@@ -23,10 +23,9 @@ console.log(greeting); // این بخش با اینکه فارسی دارد، ه
 
 This is an English line and should be left-to-right
 این یک خط فارسی است و باید راست‌به‌چپ باشد
-SELECT * FROM users WHERE active = 1
+SELECT \* FROM users WHERE active = 1
 در این خط، متن فارسی رایج غالب است و باید راست‌چین شود
 Another English-only line right here
-
 
 - این یک لیست است
   - زیر مورد انگلیسی mixed content اینجا
@@ -34,6 +33,6 @@ Another English-only line right here
 
 > نقل قول فارسی که باید راست‌چین باشد
 
-| ستون اول | Col 2 |
-|----------|-------|
+| ستون اول    | Col 2 |
+| ----------- | ----- |
 | مقدار فارسی | value |

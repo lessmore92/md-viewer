@@ -17,8 +17,8 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js')
-    }
+      preload: path.join(__dirname, 'preload.js'),
+    },
   });
 
   if (isDev) {
@@ -62,9 +62,7 @@ function sendPendingFile() {
 async function openFileDialogAction() {
   const result = await dialog.showOpenDialog(mainWindow!, {
     properties: ['openFile'],
-    filters: [
-      { name: 'Markdown', extensions: ['md', 'markdown', 'mdown', 'mkd'] }
-    ]
+    filters: [{ name: 'Markdown', extensions: ['md', 'markdown', 'mdown', 'mkd'] }],
   });
   if (!result.canceled && result.filePaths.length > 0) {
     mainWindow!.webContents.send('open-file', result.filePaths[0]);
@@ -72,9 +70,8 @@ async function openFileDialogAction() {
 }
 
 function buildMenu() {
-  const template: Electron.MenuItemConstructorOptions[] = process.platform === 'darwin'
-    ? [{ role: 'appMenu' as const }]
-    : [];
+  const template: Electron.MenuItemConstructorOptions[] =
+    process.platform === 'darwin' ? [{ role: 'appMenu' as const }] : [];
 
   template.push(
     {
@@ -83,13 +80,11 @@ function buildMenu() {
         {
           label: 'Open Markdown File...',
           accelerator: 'CmdOrCtrl+O',
-          click: () => openFileDialogAction()
+          click: () => openFileDialogAction(),
         },
         { type: 'separator' },
-        process.platform === 'darwin'
-          ? { role: 'close' as const }
-          : { role: 'quit' as const }
-      ]
+        process.platform === 'darwin' ? { role: 'close' as const } : { role: 'quit' as const },
+      ],
     },
     {
       label: 'View',
@@ -102,9 +97,9 @@ function buildMenu() {
         { role: 'zoomIn' as const },
         { role: 'zoomOut' as const },
         { type: 'separator' },
-        { role: 'togglefullscreen' as const }
-      ]
-    }
+        { role: 'togglefullscreen' as const },
+      ],
+    },
   );
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
@@ -142,9 +137,7 @@ app.on('open-file', (event, filePath) => {
 ipcMain.handle('open-file-dialog', async () => {
   const result = await dialog.showOpenDialog(mainWindow!, {
     properties: ['openFile'],
-    filters: [
-      { name: 'Markdown', extensions: ['md', 'markdown', 'mdown', 'mkd'] }
-    ]
+    filters: [{ name: 'Markdown', extensions: ['md', 'markdown', 'mdown', 'mkd'] }],
   });
 
   if (!result.canceled && result.filePaths.length > 0) {

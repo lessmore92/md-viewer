@@ -10,9 +10,10 @@ interface DocState {
 
 const emptyDoc: DocState = {
   path: null,
-  content: '# MD Viewer\n\nبرای باز کردن یک فایل Markdown، از منوی **باز کردن فایل** استفاده کنید.\n\n```js\nconsole.log("Hello, World!"); // این بخش همیشه LTR نمایش داده می‌شود\n```\n\nمتن فارسی `inline code` و mixed **English** فقط در این حالت RTL/LTR درست نمایش داده می‌شود.',
+  content:
+    '# MD Viewer\n\nبرای باز کردن یک فایل Markdown، از منوی **باز کردن فایل** استفاده کنید.\n\n```js\nconsole.log("Hello, World!"); // این بخش همیشه LTR نمایش داده می‌شود\n```\n\nمتن فارسی `inline code` و mixed **English** فقط در این حالت RTL/LTR درست نمایش داده می‌شود.',
   fileName: '',
-  error: null
+  error: null,
 };
 
 function App() {
@@ -79,8 +80,12 @@ function App() {
   }, [dark]);
 
   return (
-    <div className={`h-full flex flex-col ${dark ? 'dark bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'} transition-colors`}>
-      <header className={`flex items-center justify-between px-4 py-2 border-b select-none ${dark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+    <div
+      className={`h-full flex flex-col ${dark ? 'dark bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'} transition-colors`}
+    >
+      <header
+        className={`flex items-center justify-between px-4 py-2 border-b select-none ${dark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}
+      >
         <div className="flex items-center gap-3">
           <span className="text-lg font-bold">📄</span>
           <span className="font-semibold truncate">{doc.fileName || 'MD Viewer'}</span>
@@ -115,7 +120,9 @@ function App() {
         </div>
       </main>
 
-      <footer className={`px-4 py-2 text-xs text-center border-t ${dark ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500'}`}>
+      <footer
+        className={`px-4 py-2 text-xs text-center border-t ${dark ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500'}`}
+      >
         MD Viewer — مشاهده‌گر Markdown با پشتیبانی RTL
       </footer>
     </div>

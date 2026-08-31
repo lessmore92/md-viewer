@@ -43,7 +43,7 @@ function splitLines(nodes: ReactNode): ReactNode[][] {
       const childText = getText(child);
       if (/\n/.test(childText)) {
         const open = React.cloneElement(child, {
-          children: splitLines((child.props as any).children).flat()
+          children: splitLines((child.props as any).children).flat(),
         });
         lines[lines.length - 1].push(open);
       } else {
@@ -80,13 +80,20 @@ const bidiComponent = (Tag: any, extraClassName = '') =>
     if (!containsNewline(children)) {
       const dir = detectDirection(getText(children));
       return (
-        <Tag {...props} dir={dir} className={[extraClassName, props.className].filter(Boolean).join(' ') || undefined}>
+        <Tag
+          {...props}
+          dir={dir}
+          className={[extraClassName, props.className].filter(Boolean).join(' ') || undefined}
+        >
           {children}
         </Tag>
       );
     }
     return (
-      <Tag {...props} className={[extraClassName, props.className].filter(Boolean).join(' ') || undefined}>
+      <Tag
+        {...props}
+        className={[extraClassName, props.className].filter(Boolean).join(' ') || undefined}
+      >
         <BidiText>{children}</BidiText>
       </Tag>
     );
@@ -101,7 +108,11 @@ const TableCell = bidiComponent('td');
 const CodeBlock = function CodeBlock(props: any) {
   const { inline, className, children } = props;
   if (inline) {
-    return <code className={className} dir="ltr">{children}</code>;
+    return (
+      <code className={className} dir="ltr">
+        {children}
+      </code>
+    );
   }
   return (
     <pre dir="ltr">
@@ -122,16 +133,12 @@ const components = {
   blockquote: Blockquote,
   td: TableCell,
   th: TableCell,
-  code: CodeBlock
+  code: CodeBlock,
 };
 
 export default function Markdown({ content }: MarkdownProps) {
   return (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
-      rehypePlugins={[rehypeRaw]}
-      components={components}
-    >
+    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={components}>
       {content}
     </ReactMarkdown>
   );
