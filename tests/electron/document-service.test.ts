@@ -67,6 +67,24 @@ describe('readMarkdownDocument', () => {
 });
 
 describe('resolveDocumentAsset', () => {
+  it('revokes the previous document capability when a new document becomes active', async () => {
+    const firstDirectory = await createTemporaryDirectory();
+    const secondDirectory = await createTemporaryDirectory();
+    const firstDocumentPath = path.join(firstDirectory, 'README.md');
+    const firstAssetPath = path.join(firstDirectory, 'image.png');
+    const secondDocumentPath = path.join(secondDirectory, 'README.md');
+    await writeFile(firstDocumentPath, '# First', 'utf8');
+    await writeFile(firstAssetPath, 'image', 'utf8');
+    await writeFile(secondDocumentPath, '# Second', 'utf8');
+
+    const firstDocument = await readMarkdownDocument(firstDocumentPath);
+    await readMarkdownDocument(secondDocumentPath);
+
+    await expect(resolveDocumentAsset(firstDocument.documentId, 'image.png')).rejects.toThrow(
+      /unknown/i,
+    );
+  });
+
   it('resolves decoded relative assets against the stored document root', async () => {
     const directory = await createTemporaryDirectory();
     const filePath = path.join(directory, 'README.md');

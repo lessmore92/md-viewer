@@ -1,11 +1,17 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import { IPC, type DocumentPayload } from './contracts';
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  openFileDialog: () => ipcRenderer.invoke('open-file-dialog'),
-  readFile: (filePath: string) => ipcRenderer.invoke('read-file', filePath),
-  getFileName: (filePath: string) => ipcRenderer.invoke('get-file-name', filePath),
-  getAppPath: () => ipcRenderer.invoke('get-app-path'),
-  onOpenFile: (callback: (filePath: string) => void) => {
-    ipcRenderer.on('open-file', (event, filePath) => callback(filePath));
+  selectDocument: () => ipcRenderer.invoke(IPC.selectDocument),
+  openExternal: (url: string) => ipcRenderer.invoke(IPC.openExternal, url),
+  assetUrl: (documentId: string, relativePath: string) => {
+    const encodedPath = relativePath.split(/[\\/]/).map(encodeURIComponent).join('/');
+    return `md-asset://document/${encodeURIComponent(documentId)}/${encodedPath}`;
+  },
+  onDocumentOpened: (callback: (document: DocumentPayload) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, document: DocumentPayload) =>
+      callback(document);
+    ipcRenderer.on(IPC.openedDocument, listener);
+    return () => ipcRenderer.removeListener(IPC.openedDocument, listener);
   },
 });

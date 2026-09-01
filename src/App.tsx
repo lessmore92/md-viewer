@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { DocumentPayload } from '../electron/contracts';
 import Markdown from './components/Markdown';
 
 interface DocState {
   path: string | null;
   content: string;
   fileName: string;
+  documentId: string | null;
   error: string | null;
 }
 
@@ -13,6 +15,7 @@ const emptyDoc: DocState = {
   content:
     '# MD Viewer\n\nبرای باز کردن یک فایل Markdown، از منوی **باز کردن فایل** استفاده کنید.\n\n```js\nconsole.log("Hello, World!"); // این بخش همیشه LTR نمایش داده می‌شود\n```\n\nمتن فارسی `inline code` و mixed **English** فقط در این حالت RTL/LTR درست نمایش داده می‌شود.',
   fileName: '',
+  documentId: null,
   error: null,
 };
 
@@ -26,39 +29,29 @@ function App() {
     }
   });
 
-  const loadFile = useCallback(async (filePath: string) => {
-    try {
-      const api = (window as any).electronAPI;
-      const result = await api.readFile(filePath);
-      if (result.error) {
-        setDoc({ path: filePath, content: '', fileName: '', error: result.error });
-        return;
-      }
-      const name = await api.getFileName(filePath);
-      setDoc({ path: filePath, content: result.content, fileName: name, error: null });
-    } catch (err) {
-      setDoc({ path: null, content: '', fileName: '', error: (err as Error).message });
-    }
+  const loadDocument = useCallback((document: DocumentPayload) => {
+    setDoc({
+      path: document.filePath,
+      content: document.content,
+      fileName: document.fileName,
+      documentId: document.documentId,
+      error: null,
+    });
   }, []);
 
   useEffect(() => {
-    const api = (window as any).electronAPI;
+    const api = window.electronAPI;
     if (!api) return;
 
-    api.onOpenFile((filePath: string) => {
-      loadFile(filePath);
-    });
-  }, [loadFile]);
+    return api.onDocumentOpened(loadDocument);
+  }, [loadDocument]);
 
   const openDialog = async () => {
     try {
-      const api = (window as any).electronAPI;
-      const filePath = await api.openFileDialog();
-      if (filePath) {
-        loadFile(filePath);
-      }
+      const document = await window.electronAPI.selectDocument();
+      if (document) loadDocument(document);
     } catch (err) {
-      console.error(err);
+      setDoc({ path: null, content: '', fileName: '', documentId: null, error: String(err) });
     }
   };
 

@@ -20,6 +20,7 @@ export async function readMarkdownDocument(filePath: string): Promise<DocumentPa
   const content = await readFile(canonicalFilePath, 'utf8');
   const documentId = randomUUID();
 
+  documentRoots.clear();
   documentRoots.set(documentId, path.dirname(canonicalFilePath));
 
   return {

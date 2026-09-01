@@ -1,11 +1,12 @@
 /// <reference types="vite/client" />
 
+import type { DocumentPayload } from '../electron/contracts';
+
 interface ElectronAPI {
-  openFileDialog: () => Promise<string | null>;
-  readFile: (filePath: string) => Promise<{ content: string | null; error: string | null }>;
-  getFileName: (filePath: string) => Promise<string>;
-  getAppPath: () => Promise<string>;
-  onOpenFile: (callback: (filePath: string) => void) => void;
+  selectDocument(): Promise<DocumentPayload | null>;
+  openExternal(url: string): Promise<boolean>;
+  assetUrl(documentId: string, relativePath: string): string;
+  onDocumentOpened(callback: (document: DocumentPayload) => void): () => void;
 }
 
 declare global {
