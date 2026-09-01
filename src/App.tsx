@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { DocumentPayload } from '../electron/contracts';
-import Markdown from './components/Markdown';
+import { MarkdownView } from './markdown/MarkdownView';
 
 interface DocState {
   path: string | null;
@@ -108,7 +108,7 @@ function App() {
       <main className="flex-1 overflow-auto">
         <div className="max-w-4xl mx-auto px-8 py-8">
           <div className="markdown-body">
-            <Markdown content={doc.content} />
+            <MarkdownView content={doc.content} documentId={doc.documentId} />
           </div>
         </div>
       </main>
