@@ -39,7 +39,12 @@
     },
     "fileAssociations": [
       {
-        "ext": "md",
+        "ext": [
+          "md",
+          "markdown",
+          "mdown",
+          "mkd"
+        ],
         "name": "Markdown File",
         "description": "Markdown document",
         "icon": "icon.png"

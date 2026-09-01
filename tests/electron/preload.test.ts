@@ -8,6 +8,7 @@ const electron = vi.hoisted(() => ({
   invoke: vi.fn(),
   on: vi.fn(),
   removeListener: vi.fn(),
+  send: vi.fn(),
 }));
 
 vi.mock('electron', () => ({
@@ -16,6 +17,7 @@ vi.mock('electron', () => ({
     invoke: electron.invoke,
     on: electron.on,
     removeListener: electron.removeListener,
+    send: electron.send,
   },
 }));
 
@@ -35,6 +37,15 @@ beforeEach(() => {
 });
 
 describe('preload bridge', () => {
+  it('signals renderer readiness only after installing the document listener', () => {
+    api.onDocumentOpened(vi.fn());
+
+    expect(electron.send).toHaveBeenCalledWith('renderer:ready');
+    expect(electron.on.mock.invocationCallOrder[0]).toBeLessThan(
+      electron.send.mock.invocationCallOrder[0],
+    );
+  });
+
   it('subscribes to document payloads and removes the exact listener during cleanup', () => {
     const callback = vi.fn();
     const cleanup = api.onDocumentOpened(callback);

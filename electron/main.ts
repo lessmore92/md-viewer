@@ -3,6 +3,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { app, BrowserWindow, dialog, ipcMain, Menu, net, protocol, shell } from 'electron';
 import { IPC, type DocumentPayload } from './contracts';
+import { createDocumentDelivery } from './document-delivery';
 import { readMarkdownDocument, resolveDocumentAsset } from './document-service';
 import { findMarkdownArgument } from './file-arguments';
 import { isTrustedSender, parseExternalUrl } from './security';
@@ -25,9 +26,13 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 let mainWindow: BrowserWindow | null = null;
-let rendererReady = false;
-let pendingDocument: DocumentPayload | null = null;
 let documentTaskQueue: Promise<void> = Promise.resolve();
+
+const documentDelivery = createDocumentDelivery((document) => {
+  if (!mainWindow || mainWindow.isDestroyed()) return false;
+  mainWindow.webContents.send(IPC.openedDocument, document);
+  return true;
+});
 
 function enqueueDocumentTask<T>(task: () => Promise<T>): Promise<T> {
   const result = documentTaskQueue.then(task);
@@ -39,19 +44,7 @@ function enqueueDocumentTask<T>(task: () => Promise<T>): Promise<T> {
 }
 
 function publishDocument(document: DocumentPayload): void {
-  if (rendererReady && mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send(IPC.openedDocument, document);
-    return;
-  }
-
-  pendingDocument = document;
-}
-
-function sendPendingDocument(): void {
-  if (!pendingDocument || !mainWindow || mainWindow.isDestroyed()) return;
-
-  mainWindow.webContents.send(IPC.openedDocument, pendingDocument);
-  pendingDocument = null;
+  documentDelivery.publish(document);
 }
 
 function openDocumentPath(filePath: string): Promise<DocumentPayload> {
@@ -103,14 +96,10 @@ function createWindow(): BrowserWindow {
   });
 
   mainWindow = window;
-  rendererReady = false;
+  documentDelivery.markRendererLoading();
 
   window.webContents.on('did-start-loading', () => {
-    rendererReady = false;
-  });
-  window.webContents.on('did-finish-load', () => {
-    rendererReady = true;
-    sendPendingDocument();
+    documentDelivery.markRendererLoading();
   });
   window.webContents.on('will-navigate', (event, url) => {
     if (!isTrustedSender(url, trustedRendererUrl)) event.preventDefault();
@@ -130,7 +119,7 @@ function createWindow(): BrowserWindow {
   window.on('closed', () => {
     if (mainWindow === window) {
       mainWindow = null;
-      rendererReady = false;
+      documentDelivery.markRendererLoading();
     }
   });
 
@@ -179,8 +168,14 @@ function buildMenu(): void {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
+function isTrustedIpcSender(event: {
+  readonly senderFrame: Electron.WebFrameMain | null;
+}): boolean {
+  return Boolean(event.senderFrame && isTrustedSender(event.senderFrame.url, trustedRendererUrl));
+}
+
 function requireTrustedSender(event: Electron.IpcMainInvokeEvent): void {
-  if (!event.senderFrame || !isTrustedSender(event.senderFrame.url, trustedRendererUrl)) {
+  if (!isTrustedIpcSender(event)) {
     throw new Error('Untrusted renderer request.');
   }
 }
@@ -216,6 +211,11 @@ function registerAssetProtocol(): void {
 }
 
 function registerIpcHandlers(): void {
+  ipcMain.on(IPC.rendererReady, (event) => {
+    if (!isTrustedIpcSender(event)) return;
+    documentDelivery.markRendererReady();
+  });
+
   ipcMain.handle(IPC.selectDocument, async (event) => {
     requireTrustedSender(event);
     return selectDocument();

@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const listener = (_event: Electron.IpcRendererEvent, document: DocumentPayload) =>
       callback(document);
     ipcRenderer.on(IPC.openedDocument, listener);
+    ipcRenderer.send(IPC.rendererReady);
     return () => ipcRenderer.removeListener(IPC.openedDocument, listener);
   },
 });

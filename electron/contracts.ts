@@ -8,5 +8,6 @@ export interface DocumentPayload {
 export const IPC = {
   selectDocument: 'document:select',
   openedDocument: 'document:opened',
+  rendererReady: 'renderer:ready',
   openExternal: 'navigation:open-external',
 } as const;
