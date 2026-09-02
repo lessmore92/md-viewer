@@ -4,5 +4,6 @@ dist-electron/
 release/
 *.log
 .DS_Store
-build/
+build/*
+!build/icon.png
 .superpowers/
