@@ -5,6 +5,7 @@ const attributes = defaultSchema.attributes ?? {};
 
 export const markdownSchema: Schema = {
   ...defaultSchema,
+  tagNames: defaultSchema.tagNames?.filter((tagName) => !['picture', 'source'].includes(tagName)),
   attributes: {
     ...attributes,
     blockquote: [
@@ -22,6 +23,7 @@ export const markdownSchema: Schema = {
     ],
     code: [...(attributes.code ?? []), ['className', 'hljs', /^language-[\w-]+$/]],
     p: [...(attributes.p ?? []), ['className', 'markdown-alert-title']],
+    source: [],
     span: [
       ...(attributes.span ?? []),
       ['className', /^hljs-[\w-]+$/, 'hljs', 'class_', 'language_', 'title'],

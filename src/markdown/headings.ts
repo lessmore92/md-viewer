@@ -20,7 +20,8 @@ export function extractHeadings(markdown: string): HeadingItem[] {
   const ancestors: HeadingItem[] = [];
 
   visit(tree, 'heading', (node) => {
-    const id = slugger.slug(toString(node));
+    const text = toString(node, { includeHtml: false });
+    const id = slugger.slug(text);
 
     if (node.depth !== 1 && node.depth !== 2 && node.depth !== 3) {
       return;
@@ -29,7 +30,7 @@ export function extractHeadings(markdown: string): HeadingItem[] {
     const item: HeadingItem = {
       id,
       depth: node.depth,
-      text: toString(node),
+      text,
       children: [],
     };
 
@@ -58,7 +59,10 @@ export function createHeadingIdPlugin(): (tree: Root) => void {
       const data = (node.data ?? {}) as Record<string, unknown>;
       const hProperties = (data.hProperties ?? {}) as Record<string, unknown>;
 
-      data.hProperties = { ...hProperties, id: slugger.slug(toString(node)) };
+      data.hProperties = {
+        ...hProperties,
+        id: slugger.slug(toString(node, { includeHtml: false })),
+      };
       node.data = data;
     });
   };

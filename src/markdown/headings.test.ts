@@ -45,6 +45,19 @@ describe('extractHeadings', () => {
       ['duplicate', 'duplicate-2'],
     ]);
   });
+
+  it('excludes raw HTML tags from outline text and duplicate heading slugs', () => {
+    expect(
+      extractHeadings('# Press <kbd>Ctrl</kbd>\n#### Press Ctrl\n## Press <kbd>Ctrl</kbd>'),
+    ).toEqual([
+      {
+        id: 'press-ctrl',
+        depth: 1,
+        text: 'Press Ctrl',
+        children: [{ id: 'press-ctrl-2', depth: 2, text: 'Press Ctrl', children: [] }],
+      },
+    ]);
+  });
 });
 
 describe('createHeadingIdPlugin', () => {
@@ -56,5 +69,18 @@ describe('createHeadingIdPlugin', () => {
     visit(tree, 'heading', (node) => ids.push(node.data?.hProperties?.id));
 
     expect(ids).toEqual(['intro', 'intro-1', 'detail']);
+  });
+
+  it('deduplicates renderer IDs using visible text instead of raw HTML tags', () => {
+    const tree = unified()
+      .use(remarkParse)
+      .use(remarkGfm)
+      .parse('# Press <kbd>Ctrl</kbd>\n#### Press Ctrl\n## Press <kbd>Ctrl</kbd>');
+    createHeadingIdPlugin()(tree);
+
+    const ids: unknown[] = [];
+    visit(tree, 'heading', (node) => ids.push(node.data?.hProperties?.id));
+
+    expect(ids).toEqual(['press-ctrl', 'press-ctrl-1', 'press-ctrl-2']);
   });
 });

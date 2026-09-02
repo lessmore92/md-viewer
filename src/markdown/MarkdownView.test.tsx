@@ -82,6 +82,35 @@ describe('MarkdownView', () => {
     ]);
   });
 
+  it('uses visible raw HTML heading text for matching duplicate renderer and outline IDs', () => {
+    const onHeadingsChange = vi.fn();
+
+    render(
+      <MarkdownView
+        content={'# Press <kbd>Ctrl</kbd>\n\n## Press <kbd>Ctrl</kbd>'}
+        documentId="doc-1"
+        onHeadingsChange={onHeadingsChange}
+      />,
+    );
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Press Ctrl' })).toHaveAttribute(
+      'id',
+      'press-ctrl',
+    );
+    expect(screen.getByRole('heading', { level: 2, name: 'Press Ctrl' })).toHaveAttribute(
+      'id',
+      'press-ctrl-1',
+    );
+    expect(onHeadingsChange).toHaveBeenLastCalledWith([
+      {
+        id: 'press-ctrl',
+        depth: 1,
+        text: 'Press Ctrl',
+        children: [{ id: 'press-ctrl-1', depth: 2, text: 'Press Ctrl', children: [] }],
+      },
+    ]);
+  });
+
   it('restores generated heading IDs without disabling raw HTML clobber protection', () => {
     const { container } = render(
       <MarkdownView
@@ -120,6 +149,25 @@ describe('MarkdownView', () => {
     expect(details).not.toHaveAttribute('onclick');
     expect(screen.getByText('Ctrl').tagName).toBe('KBD');
     expect(screen.getByText('unsafe').closest('a')).not.toHaveAttribute('href');
+  });
+
+  it('removes raw picture sources and srcset candidates from sanitized output', () => {
+    const { container } = render(
+      <MarkdownView
+        content={
+          '<picture><source srcset="https://attacker.example/track.png 1x, images/alternate.png 2x"><img src="images/fallback.png" srcset="images/bypass.png 2x" alt="Fallback"></picture>'
+        }
+        documentId="doc-1"
+      />,
+    );
+
+    expect(container.querySelector('picture')).toBeNull();
+    expect(container.querySelector('source')).toBeNull();
+    expect(container.querySelector('[srcset]')).toBeNull();
+    expect(screen.getByRole('img', { name: 'Fallback' })).toHaveAttribute(
+      'src',
+      'md-asset://local/doc-1/images/fallback.png',
+    );
   });
 
   it('renders supported GitHub alerts without changing ordinary blockquotes', () => {
