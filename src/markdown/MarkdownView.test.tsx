@@ -1,8 +1,9 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DocumentPayload } from '../../electron/contracts';
 import { MarkdownView } from './MarkdownView';
+import { installMedia } from '../test/browser';
 
 function installElectronApi() {
   const assetUrl = vi.fn(
@@ -25,6 +26,11 @@ function installElectronApi() {
 
 describe('MarkdownView', () => {
   afterEach(cleanup);
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
 
   beforeEach(() => {
     installElectronApi();
@@ -269,6 +275,29 @@ describe('MarkdownView', () => {
     await user.click(screen.getByRole('button', { name: 'Copy code' }));
 
     expect(writeText).toHaveBeenCalledWith('console.log(1)\n');
+  });
+
+  it('resets visible code-copy confirmation after two seconds', async () => {
+    const user = userEvent.setup();
+    render(<MarkdownView content={'```js\nconst x = 1\n```'} documentId="doc-1" />);
+    await user.click(screen.getByRole('button', { name: 'Copy code' }));
+    expect(screen.getByRole('button')).toHaveTextContent('Copied');
+    await waitFor(() => expect(screen.getByRole('button')).not.toHaveTextContent('Copied'), {
+      timeout: 2500,
+    });
+  });
+
+  it('respects reduced motion when following a fragment', async () => {
+    installMedia({ reduced: true });
+    const user = userEvent.setup();
+    render(<MarkdownView content={'[Jump](#target)\n\n## Target'} documentId="doc-1" />);
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(screen.getByRole('heading', { name: 'Target' }), 'scrollIntoView', {
+      value: scrollIntoView,
+      configurable: true,
+    });
+    await user.click(screen.getByRole('link', { name: 'Jump' }));
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'auto', block: 'start' });
   });
 
   it('keeps nested inline markup and hard line breaks while applying block direction', () => {

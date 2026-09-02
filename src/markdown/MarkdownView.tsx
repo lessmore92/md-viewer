@@ -18,11 +18,13 @@ import { Image } from './Image';
 import { classifyLink, isDataImage } from './links';
 import remarkAlerts, { isAlertType } from './remarkAlerts';
 import { markdownSchema } from './schema';
+import { scrollToHeading } from './navigation';
 
 export interface MarkdownViewProps {
   content: string;
   documentId: string | null;
   onHeadingsChange?: (headings: HeadingItem[]) => void;
+  onNavigate?: (id: string) => void;
 }
 
 function textContent(children: ReactNode): string {
@@ -92,7 +94,11 @@ function fragmentId(href: string): string {
   }
 }
 
-function createComponents(documentId: string | null, headingIds: Map<number, string>): Components {
+function createComponents(
+  documentId: string | null,
+  headingIds: Map<number, string>,
+  onNavigate: (id: string) => void,
+): Components {
   const Paragraph = bidiComponent('p');
   const ListItem = bidiComponent('li');
   const TableData = bidiComponent('td');
@@ -115,9 +121,7 @@ function createComponents(documentId: string | null, headingIds: Map<number, str
 
             if (kind === 'fragment') {
               event.preventDefault();
-              document
-                .getElementById(fragmentId(href))
-                ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              onNavigate(fragmentId(href));
             } else if (kind === 'external') {
               event.preventDefault();
               void window.electronAPI.openExternal(href);
@@ -164,12 +168,17 @@ function markdownUrlTransform(value: string, key: string): string {
   return defaultUrlTransform(value);
 }
 
-export function MarkdownView({ content, documentId, onHeadingsChange }: MarkdownViewProps) {
+export function MarkdownView({
+  content,
+  documentId,
+  onHeadingsChange,
+  onNavigate = scrollToHeading,
+}: MarkdownViewProps) {
   const headings = useMemo(() => extractHeadings(content), [content]);
   const headingIds = useMemo(() => collectHeadingIds(content), [content]);
   const components = useMemo(
-    () => createComponents(documentId, headingIds),
-    [documentId, headingIds],
+    () => createComponents(documentId, headingIds, onNavigate),
+    [documentId, headingIds, onNavigate],
   );
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { isValidElement, useState } from 'react';
+import { isValidElement, useEffect, useRef, useState } from 'react';
 import type { ComponentPropsWithoutRef, ReactNode } from 'react';
 import type { ExtraProps } from 'react-markdown';
 
@@ -33,7 +33,10 @@ export function Pre(input: PreProps) {
   delete safeProps.node;
   const { children, ...props } = safeProps;
   const [copied, setCopied] = useState(false);
+  const resetTimer = useRef<ReturnType<typeof setTimeout>>();
   const source = textContent(children);
+
+  useEffect(() => () => clearTimeout(resetTimer.current), []);
 
   const copy = async () => {
     if (!navigator.clipboard) return;
@@ -41,6 +44,8 @@ export function Pre(input: PreProps) {
     try {
       await navigator.clipboard.writeText(source);
       setCopied(true);
+      clearTimeout(resetTimer.current);
+      resetTimer.current = setTimeout(() => setCopied(false), 2000);
     } catch {
       setCopied(false);
     }
@@ -49,7 +54,7 @@ export function Pre(input: PreProps) {
   return (
     <div className="markdown-code-block">
       <button aria-label="Copy code" className="markdown-code-copy" onClick={copy} type="button">
-        {copied ? 'Copied' : 'Copy'}
+        <span aria-live="polite">{copied ? 'Copied' : 'Copy'}</span>
       </button>
       <pre {...props}>{children}</pre>
     </div>

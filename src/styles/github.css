@@ -1,0 +1,249 @@
+@import 'github-markdown-css/github-markdown.css';
+
+/* Keep the upstream GitHub surface, but make the manual theme independent of OS theme. */
+:root .markdown-body {
+  color-scheme: light;
+  --focus-outlineColor: #0969da;
+  --fgColor-default: #1f2328;
+  --fgColor-muted: #59636e;
+  --fgColor-accent: #0969da;
+  --fgColor-success: #1a7f37;
+  --fgColor-attention: #9a6700;
+  --fgColor-danger: #d1242f;
+  --fgColor-done: #8250df;
+  --bgColor-default: #ffffff;
+  --bgColor-muted: #f6f8fa;
+  --bgColor-neutral-muted: #818b981f;
+  --bgColor-attention-muted: #fff8c5;
+  --borderColor-default: #d1d9e0;
+  --borderColor-muted: #d1d9e0b3;
+  --borderColor-neutral-muted: #d1d9e0b3;
+  --borderColor-accent-emphasis: #0969da;
+  --borderColor-success-emphasis: #1a7f37;
+  --borderColor-attention-emphasis: #9a6700;
+  --borderColor-danger-emphasis: #cf222e;
+  --borderColor-done-emphasis: #8250df;
+  --syntax-comment: #59636e;
+  --syntax-keyword: #cf222e;
+  --syntax-string: #0a3069;
+  --syntax-number: #0550ae;
+  --syntax-title: #6639ba;
+  --syntax-variable: #953800;
+}
+
+:root[data-theme='dark'] .markdown-body {
+  color-scheme: dark;
+  --focus-outlineColor: #4493f8;
+  --fgColor-default: #f0f6fc;
+  --fgColor-muted: #9198a1;
+  --fgColor-accent: #4493f8;
+  --fgColor-success: #3fb950;
+  --fgColor-attention: #d29922;
+  --fgColor-danger: #f85149;
+  --fgColor-done: #ab7df8;
+  --bgColor-default: #0d1117;
+  --bgColor-muted: #151b23;
+  --bgColor-neutral-muted: #656c7633;
+  --bgColor-attention-muted: #bb800926;
+  --borderColor-default: #3d444d;
+  --borderColor-muted: #3d444db3;
+  --borderColor-neutral-muted: #3d444db3;
+  --borderColor-accent-emphasis: #1f6feb;
+  --borderColor-success-emphasis: #238636;
+  --borderColor-attention-emphasis: #9e6a03;
+  --borderColor-danger-emphasis: #da3633;
+  --borderColor-done-emphasis: #8957e5;
+  --syntax-comment: #9198a1;
+  --syntax-keyword: #ff7b72;
+  --syntax-string: #a5d6ff;
+  --syntax-number: #79c0ff;
+  --syntax-title: #d2a8ff;
+  --syntax-variable: #ffa657;
+}
+
+.markdown-body {
+  min-width: 0;
+  padding: 32px;
+  border: 1px solid var(--borderColor-default);
+  border-radius: 6px;
+  font-family:
+    Vazirmatn,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Arial,
+    sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+.markdown-body :is(h1, h2, h3, h4, h5, h6) {
+  scroll-margin-top: 24px;
+  text-align: start;
+}
+.markdown-body :is(p, li, td, th, blockquote) {
+  text-align: start;
+}
+.markdown-body :is(ul, ol) {
+  padding-left: 0;
+  padding-right: 0;
+  padding-inline-start: 2em;
+}
+.markdown-body :is(ul, ol):has(> li[dir='ltr']):not(:has(> li[dir='rtl'])) {
+  direction: ltr;
+}
+.markdown-body :is(ul, ol):has(> li[dir='rtl']) {
+  direction: rtl;
+}
+.markdown-body blockquote {
+  border-left: 0;
+  border-inline-start: 0.25em solid var(--borderColor-default);
+}
+.markdown-body code,
+.markdown-body pre {
+  direction: ltr;
+  text-align: left;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, 'Liberation Mono', monospace;
+}
+.markdown-body :not(pre) > code {
+  display: inline-block;
+  unicode-bidi: isolate;
+  white-space: break-spaces;
+  overflow-wrap: anywhere;
+}
+.markdown-body pre {
+  overflow: auto;
+  max-width: 100%;
+}
+.markdown-body pre code {
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+.markdown-body .markdown-code-block {
+  position: relative;
+  margin-bottom: 16px;
+  direction: ltr;
+}
+.markdown-body .markdown-code-block pre {
+  padding-top: 48px;
+  margin-bottom: 0;
+}
+.markdown-body .markdown-code-copy {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 3px 10px;
+  min-height: 28px;
+  border: 1px solid var(--borderColor-default);
+  border-radius: 6px;
+  background: var(--bgColor-default);
+  color: var(--fgColor-muted);
+  font:
+    12px/1.5 Vazirmatn,
+    sans-serif;
+  cursor: pointer;
+}
+.markdown-body .markdown-code-copy:hover {
+  color: var(--fgColor-default);
+  background: var(--bgColor-neutral-muted);
+}
+.markdown-body a:focus-visible,
+.markdown-body button:focus-visible,
+.markdown-body summary:focus-visible {
+  outline: 2px solid var(--focus-outlineColor);
+  outline-offset: 3px;
+}
+.markdown-body table {
+  max-width: 100%;
+  overflow: auto;
+}
+.markdown-body .task-list-item > input {
+  margin: 0 0.25em 0 -1.5em;
+  margin-inline: -1.5em 0.5em;
+  accent-color: var(--fgColor-accent);
+}
+.markdown-body img {
+  max-width: 100%;
+  height: auto;
+}
+.markdown-body .markdown-image-fallback {
+  display: inline-block;
+  max-width: 100%;
+  padding: 8px 12px;
+  border: 1px dashed var(--borderColor-default);
+  border-radius: 6px;
+  color: var(--fgColor-muted);
+  background: var(--bgColor-muted);
+  font-size: 13px;
+  direction: ltr;
+  unicode-bidi: isolate;
+  overflow-wrap: anywhere;
+}
+.markdown-body .markdown-alert {
+  border-left: 0;
+  border-inline-start: 0.25em solid var(--borderColor-accent-emphasis);
+}
+.markdown-body .markdown-alert-tip {
+  border-inline-start-color: var(--borderColor-success-emphasis);
+}
+.markdown-body .markdown-alert-important {
+  border-inline-start-color: var(--borderColor-done-emphasis);
+}
+.markdown-body .markdown-alert-warning {
+  border-inline-start-color: var(--borderColor-attention-emphasis);
+}
+.markdown-body .markdown-alert-caution {
+  border-inline-start-color: var(--borderColor-danger-emphasis);
+}
+.markdown-body .markdown-alert-icon {
+  display: none;
+}
+.markdown-body .hljs-comment,
+.markdown-body .hljs-quote {
+  color: var(--syntax-comment);
+}
+.markdown-body .hljs-keyword,
+.markdown-body .hljs-selector-tag,
+.markdown-body .hljs-type {
+  color: var(--syntax-keyword);
+}
+.markdown-body .hljs-string,
+.markdown-body .hljs-regexp,
+.markdown-body .hljs-meta .hljs-string {
+  color: var(--syntax-string);
+}
+.markdown-body .hljs-number,
+.markdown-body .hljs-literal,
+.markdown-body .hljs-attr,
+.markdown-body .hljs-built_in {
+  color: var(--syntax-number);
+}
+.markdown-body .hljs-title,
+.markdown-body .hljs-section {
+  color: var(--syntax-title);
+}
+.markdown-body .hljs-variable,
+.markdown-body .hljs-template-variable {
+  color: var(--syntax-variable);
+}
+.markdown-body .hljs-addition {
+  color: var(--fgColor-success);
+}
+.markdown-body .hljs-deletion {
+  color: var(--fgColor-danger);
+}
+.markdown-body .hljs-emphasis {
+  font-style: italic;
+}
+.markdown-body .hljs-strong {
+  font-weight: 700;
+}
+
+@media (max-width: 560px) {
+  .markdown-body {
+    padding: 20px 16px;
+    font-size: 15px;
+  }
+}
