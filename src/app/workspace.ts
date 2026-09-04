@@ -222,11 +222,6 @@ export function readWorkspace(): WorkspaceState {
 
 export function saveWorkspace(workspace: WorkspaceState): boolean {
   try {
-    if (workspace.tabs.length === 0) {
-      localStorage.removeItem(workspaceStorageKey);
-      return true;
-    }
-
     localStorage.setItem(
       workspaceStorageKey,
       JSON.stringify({

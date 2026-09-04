@@ -197,6 +197,20 @@ it('saves workspace snapshots without scroll positions and reports storage failu
   expect(saveWorkspace(workspace)).toBe(false);
 });
 
+it('persists an empty workspace so legacy documents are not restored again', () => {
+  localStorage.setItem(
+    'md-viewer-document-v1',
+    JSON.stringify({
+      fileName: 'Legacy.md',
+      content: '# Legacy',
+      documentId: 'legacy-render',
+    }),
+  );
+
+  expect(saveWorkspace(createWorkspace())).toBe(true);
+  expect(readWorkspace()).toEqual(createWorkspace(true));
+});
+
 it('persists the restore-tabs preference and reports storage failures', () => {
   expect(saveRestoreTabs(false)).toBe(true);
   expect(localStorage.getItem('md-viewer-restore-tabs-v1')).toBe('false');
