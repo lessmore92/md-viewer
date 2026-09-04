@@ -3,7 +3,15 @@ const reactRefresh = require('eslint-plugin-react-refresh');
 const tseslint = require('typescript-eslint');
 
 module.exports = tseslint.config(
-  { ignores: ['dist', 'dist-electron', 'release', '.superpowers'] },
+  {
+    ignores: [
+      '**/dist/**',
+      '**/dist-electron/**',
+      '**/release/**',
+      '**/.superpowers/**',
+      '**/.worktrees/**',
+    ],
+  },
   ...tseslint.configs.recommended,
   {
     files: ['**/*.{ts,tsx}'],
@@ -18,7 +26,7 @@ module.exports = tseslint.config(
     },
   },
   {
-    files: ['eslint.config.js'],
+    files: ['**/eslint.config.js'],
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
     },
