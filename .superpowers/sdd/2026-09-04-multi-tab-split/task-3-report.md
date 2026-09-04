@@ -154,3 +154,28 @@ Confirmed `git diff --exit-code HEAD -- src/app/workspace.ts tsconfig.json` had 
 3. Task 4 should provide stable navigation/drawer callbacks, as App now does, because MarkdownView's memoized heading components depend on navigation callback identity. It must wire onScrollTop into per-tab in-memory state and connect the existing close contract when adding workspace controls.
 4. Verification was automated under jsdom; no desktop packaging, full end-to-end browser run, or visual split-layout validation was performed. Split layout belongs to Task 4.
 
+## Task 3 fix finalization — 2026-09-04
+
+Status: DONE_WITH_CONCERNS.
+
+Fix commit: `94bd32f4a885583e7326883ace9b7c48edfe8219` — `fix: keep one main landmark and avoid scroll restoration churn`.
+
+Inspected and committed the existing changes in App.tsx, DocumentPane.tsx, and DocumentPane.test.tsx without implementation edits. App owns the single main landmark; panes use named sections. Scroll feedback matching the same tab, document, and position skips restoration; external positions and document changes retain restoration and frame cleanup. Regression tests cover these behaviors. No plan or ledger was edited.
+
+Focused verification, run from `D:/md-viewer/.worktrees/multi-tab-split-view`:
+
+```powershell
+& 'C:/Users/HAMAHANG/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe' ./node_modules/vitest/vitest.mjs run src/components/DocumentPane.test.tsx src/app/App.test.tsx
+```
+
+Exit code: 1. Vitest 3.2.7 reported 2 failed suites and no tests executed (duration 766ms). Both suites failed during setup:
+
+```text
+Error: Cannot find package 'vitest' imported from D:\md-viewer\node_modules\.ignored\@testing-library\jest-dom\dist\vitest.mjs
+```
+
+An initial attempt with the same arguments and `D:/md-viewer/node_modules/vitest/vitest.mjs` as the runner exited 1 with MODULE_NOT_FOUND because that runner path no longer exists. The worktree-local runner above was available. No dependencies were installed or changed.
+
+`git -c safe.directory=D:/md-viewer/.worktrees/multi-tab-split-view diff --check` exited 0 before committing, with only LF-to-CRLF warnings. The worktree was clean after the fix commit, before this report append.
+
+Concerns: Focused tests remain unverified due to dependency resolution failure, not an executed assertion failure. Broader tests, lint, build, and type-check were not run in this finalization; earlier results above are historical.
