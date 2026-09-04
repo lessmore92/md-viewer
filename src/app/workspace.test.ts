@@ -208,7 +208,29 @@ it('persists an empty workspace so legacy documents are not restored again', () 
   );
 
   expect(saveWorkspace(createWorkspace())).toBe(true);
+  expect(JSON.parse(localStorage.getItem('md-viewer-workspace-v1') ?? 'null')).toEqual({
+    tabs: [],
+    activeTabId: null,
+    splitTabId: null,
+  });
   expect(readWorkspace()).toEqual(createWorkspace(true));
+});
+
+it('migrates a legacy browser document when the workspace record is invalid', () => {
+  localStorage.setItem(
+    'md-viewer-document-v1',
+    JSON.stringify({
+      fileName: 'Legacy.md',
+      content: '# Legacy',
+      documentId: 'legacy-render',
+    }),
+  );
+  localStorage.setItem('md-viewer-workspace-v1', '{');
+
+  const workspace = readWorkspace();
+
+  expect(workspace.tabs).toHaveLength(1);
+  expect(workspace.tabs[0].document.fileName).toBe('Legacy.md');
 });
 
 it('persists the restore-tabs preference and reports storage failures', () => {

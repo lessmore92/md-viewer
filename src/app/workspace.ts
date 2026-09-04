@@ -183,10 +183,16 @@ export function setSplitTab(workspace: WorkspaceState, tabId: string | null): Wo
 export function readWorkspace(): WorkspaceState {
   const restoreTabs = restoreTabsPreference();
 
+  let raw: string | null;
   try {
-    const raw = localStorage.getItem(workspaceStorageKey);
-    if (!raw) return migrateLegacyWorkspace(restoreTabs);
+    raw = localStorage.getItem(workspaceStorageKey);
+  } catch {
+    return createWorkspace(restoreTabs);
+  }
 
+  if (raw === null) return migrateLegacyWorkspace(restoreTabs);
+
+  try {
     const parsed = JSON.parse(raw);
     if (
       typeof parsed !== 'object' ||
@@ -216,7 +222,7 @@ export function readWorkspace(): WorkspaceState {
 
     return { tabs, activeTabId, splitTabId, restoreTabs };
   } catch {
-    return createWorkspace(restoreTabs);
+    return migrateLegacyWorkspace(restoreTabs);
   }
 }
 
