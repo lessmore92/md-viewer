@@ -5,6 +5,7 @@ import type { DocumentPayload } from '../electron/contracts';
 interface ElectronAPI {
   selectDocument(): Promise<DocumentPayload | null>;
   openExternal(url: string): Promise<boolean>;
+  copyText(text: string): Promise<boolean>;
   assetUrl(documentId: string, relativePath: string): string;
   onDocumentOpened(callback: (document: DocumentPayload) => void): () => void;
 }

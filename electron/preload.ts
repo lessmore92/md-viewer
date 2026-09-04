@@ -4,6 +4,7 @@ import { IPC, type DocumentPayload } from './contracts';
 contextBridge.exposeInMainWorld('electronAPI', {
   selectDocument: () => ipcRenderer.invoke(IPC.selectDocument),
   openExternal: (url: string) => ipcRenderer.invoke(IPC.openExternal, url),
+  copyText: (text: string) => ipcRenderer.invoke(IPC.copyText, text),
   assetUrl: (documentId: string, relativePath: string) => {
     const encodedPath = relativePath.split(/[\\/]/).map(encodeURIComponent).join('/');
     return `md-asset://document/${encodeURIComponent(documentId)}/${encodedPath}`;

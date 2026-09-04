@@ -13,6 +13,7 @@ it('loads the built preload in the sandbox and exposes working intent-only opera
     | {
         selectDocument(): Promise<null>;
         openExternal(url: string): Promise<boolean>;
+        copyText(text: string): Promise<boolean>;
         assetUrl(documentId: string, relativePath: string): string;
       }
     | undefined;
@@ -43,15 +44,18 @@ it('loads the built preload in the sandbox and exposes working intent-only opera
   expect(exposedName).toBe('electronAPI');
   expect(Object.keys(api ?? {}).sort()).toEqual([
     'assetUrl',
+    'copyText',
     'onDocumentOpened',
     'openExternal',
     'selectDocument',
   ]);
   await expect(api?.selectDocument()).resolves.toBeNull();
   await expect(api?.openExternal('https://example.com/')).resolves.toBe(true);
+  await expect(api?.copyText('const x = 1')).resolves.toBe(true);
   expect(invocations).toEqual([
     ['document:select'],
     ['navigation:open-external', 'https://example.com/'],
+    ['clipboard:copy-text', 'const x = 1'],
   ]);
   expect(api?.assetUrl('document id', 'images/a b.png')).toBe(
     'md-asset://document/document%20id/images/a%20b.png',

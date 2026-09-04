@@ -13,6 +13,7 @@ function installElectronApi() {
 
   window.electronAPI = {
     assetUrl,
+    copyText: vi.fn(async () => true),
     openExternal,
     onDocumentOpened: vi.fn((callback: (document: DocumentPayload) => void) => {
       void callback;
@@ -263,27 +264,73 @@ describe('MarkdownView', () => {
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
   });
 
-  it('copies fenced code through the accessible copy control', async () => {
+  it('prefers the Electron clipboard bridge for fenced code', async () => {
     const user = userEvent.setup();
     const writeText = vi.fn(async () => undefined);
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
       value: { writeText },
     });
+    const copyText = vi.fn(async () => true);
+    window.electronAPI = { ...window.electronAPI!, copyText };
     render(<MarkdownView content={'```js\nconsole.log(1)\n```'} documentId="doc-1" />);
 
     await user.click(screen.getByRole('button', { name: 'Copy code' }));
 
-    expect(writeText).toHaveBeenCalledWith('console.log(1)\n');
+    expect(copyText).toHaveBeenCalledWith('console.log(1)\n');
+    expect(writeText).not.toHaveBeenCalled();
+    expect(screen.getByRole('status')).toHaveTextContent('کپی شد');
   });
 
-  it('resets visible code-copy confirmation after two seconds', async () => {
+  it('copies fenced code with the browser clipboard outside Electron', async () => {
+    const user = userEvent.setup();
+    delete window.electronAPI;
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+    render(<MarkdownView content={'```js\nconst x = 1\n```'} documentId="doc-1" />);
+
+    await user.click(screen.getByRole('button', { name: 'Copy code' }));
+
+    expect(writeText).toHaveBeenCalledWith('const x = 1\n');
+    expect(screen.getByRole('status')).toHaveTextContent('کپی شد');
+  });
+
+  it('shows local failure feedback when clipboard access is unavailable', async () => {
+    const user = userEvent.setup();
+    delete window.electronAPI;
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
+    render(<MarkdownView content={'```js\nconst x = 1\n```'} documentId="doc-1" />);
+
+    await user.click(screen.getByRole('button', { name: 'Copy code' }));
+
+    expect(screen.getByRole('status')).toHaveTextContent('کپی نشد');
+  });
+
+  it('shows local failure feedback when the clipboard operation rejects', async () => {
+    const user = userEvent.setup();
+    window.electronAPI = {
+      ...window.electronAPI!,
+      copyText: vi.fn(async () => {
+        throw new Error('denied');
+      }),
+    };
+    render(<MarkdownView content={'```js\nconst x = 1\n```'} documentId="doc-1" />);
+
+    await user.click(screen.getByRole('button', { name: 'Copy code' }));
+
+    expect(screen.getByRole('status')).toHaveTextContent('کپی نشد');
+  });
+
+  it('dismisses visible code-copy confirmation after 1.5 seconds', async () => {
     const user = userEvent.setup();
     render(<MarkdownView content={'```js\nconst x = 1\n```'} documentId="doc-1" />);
     await user.click(screen.getByRole('button', { name: 'Copy code' }));
-    expect(screen.getByRole('button')).toHaveTextContent('Copied');
-    await waitFor(() => expect(screen.getByRole('button')).not.toHaveTextContent('Copied'), {
-      timeout: 2500,
+    expect(screen.getByRole('status')).toHaveTextContent('کپی شد');
+    await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument(), {
+      timeout: 2000,
     });
   });
 
