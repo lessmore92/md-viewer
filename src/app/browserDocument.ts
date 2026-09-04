@@ -1,6 +1,5 @@
 import type { DocumentPayload } from '../../electron/contracts';
-
-const documentKey = 'md-viewer-document-v1';
+import { createWorkspace, openInWorkspace, readWorkspace, saveWorkspace } from './workspace';
 const maxBytes = 5 * 1024 * 1024;
 export const acceptedFiles = '.md,.markdown,.mdown,.mkd,.txt';
 
@@ -36,34 +35,12 @@ export function readBrowserFile(file: File): Promise<DocumentPayload> {
 }
 
 export function restoreBrowserDocument(): DocumentPayload | null {
-  try {
-    const value = JSON.parse(localStorage.getItem(documentKey) ?? 'null');
-    if (
-      value &&
-      typeof value.fileName === 'string' &&
-      typeof value.content === 'string' &&
-      value.content.length <= maxBytes &&
-      typeof value.documentId === 'string'
-    ) {
-      return {
-        fileName: value.fileName,
-        content: value.content,
-        documentId: value.documentId,
-        filePath: '',
-      };
-    }
-  } catch {
-    /* A saved document is optional. */
-  }
-  return null;
+  const workspace = readWorkspace();
+  return workspace.tabs.find((tab) => tab.tabId === workspace.activeTabId)?.document ?? null;
 }
 
 export function saveBrowserDocument(doc: DocumentPayload | null): boolean {
-  try {
-    if (doc) localStorage.setItem(documentKey, JSON.stringify(doc));
-    else localStorage.removeItem(documentKey);
-    return true;
-  } catch {
-    return false;
-  }
+  const restoreTabs = readWorkspace().restoreTabs;
+  const workspace = doc ? openInWorkspace(createWorkspace(restoreTabs), doc) : createWorkspace(restoreTabs);
+  return saveWorkspace(workspace);
 }
