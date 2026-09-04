@@ -2,7 +2,7 @@
 
 ## Status
 
-Complete. The renderer workspace module now type-checks under the existing ES2020 target without changing workspace runtime behavior.
+The source fix is complete. The exact plain renderer check required by the brief remains nonzero because this environment reports unrelated dependency-resolution/type diagnostics; the preserve-symlinks equivalent passes with zero renderer diagnostics.
 
 ## Changes
 
@@ -17,13 +17,23 @@ Only `src/app/workspace.ts` and this report were changed. No dependencies, gener
 
 Before the source edit, the renderer typecheck exited 1 with the 11 expected diagnostics in `src/app/workspace.ts`: nine TS2339 unsafe-property-access errors, one TS2550 `replaceAll`/ES2020 error, and the resulting TS7006 implicit-`any` error. The focused runtime baseline passed all 69 tests.
 
-After the minimal source edit, the same renderer typecheck exited 0 with no diagnostics, and the same focused suite passed all 69 tests.
+After the minimal source edit, the exact plain compiler command still exited nonzero only on unrelated environment/type-resolution diagnostics, with no diagnostics in `src/app/workspace.ts`. The preserve-symlinks equivalent exited 0 with no diagnostics, and the same focused suite passed all 69 tests.
 
 ## Verification
 
 All commands ran from `D:/md-viewer/.worktrees/multi-tab-split-view` with the bundled Node executable at `C:/Users/HAMAHANG/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe` (Node 24.19.0). No package manager or junction-creation command was run. The worktree's pre-existing dependency junctions require preserve-symlink options for reliable package/type resolution; no filesystem links were added or changed by Task 7.
 
-### Renderer TypeScript
+### Exact brief renderer TypeScript check
+
+```powershell
+node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+```
+
+Exit 2; this exact plain command does not pass in the current environment. It reports unrelated dependency-resolution/type diagnostics outside `src/app/workspace.ts`, including missing `@testing-library/jest-dom` matcher types across the UI tests and existing Markdown/unist typing diagnostics. The command does not report a Task 7 diagnostic in `src/app/workspace.ts`.
+
+### Preserve-symlinks renderer check
+
+The environment-compatible equivalent below resolves the pre-existing linked dependency installation and checks the renderer cleanly:
 
 ```powershell
 $env:NODE_OPTIONS='--preserve-symlinks --preserve-symlinks-main'
@@ -65,5 +75,6 @@ Exit 0; no whitespace errors.
 
 ## Concerns
 
-- A plain compiler invocation without TypeScript's `--preserveSymlinks` also reports unrelated dependency/type-resolution fallout caused by the worktree's pre-existing junction-based installation. The preserved-symlink renderer invocation is the established clean project check and now passes with no source diagnostics.
+- The exact plain `tsc --noEmit -p tsconfig.json` command required by the brief remains nonzero in this environment because of unrelated dependency-resolution/type diagnostics. It is not claimed as passing. The preserve-symlinks equivalent passes with zero renderer diagnostics.
+- The worktree has pre-existing dependency junctions; no junction-creation command was run and no filesystem links were added or changed by Task 7.
 - No runtime semantics were intentionally changed. The helper still uses the same object/null/`in` checks, and `/\\/g` replaces exactly the same backslash characters as the former `replaceAll('\\', '/')` call.
