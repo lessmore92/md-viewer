@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -58,10 +59,6 @@ it('marks the active tab, lets people activate another tab, and closes by file n
 
   expect(screen.getByRole('tablist', { name: 'سندهای باز' })).toBeInTheDocument();
   expect(screen.getByRole('tab', { name: 'First.md' })).toHaveAttribute('aria-selected', 'true');
-  expect(screen.getByRole('tab', { name: 'First.md' })).toHaveAttribute(
-    'aria-controls',
-    'tab-panel-first',
-  );
   expect(screen.getByRole('tab', { name: 'First.md' })).toHaveAttribute('title', 'First.md');
   expect(screen.getByRole('tab', { name: 'Second.md' })).toHaveAttribute('aria-selected', 'false');
 
@@ -71,6 +68,22 @@ it('marks the active tab, lets people activate another tab, and closes by file n
   await user.click(screen.getByRole('button', { name: 'بستن First.md' }));
   expect(handlers.onClose).toHaveBeenCalledWith('first');
   expect(handlers.onActivate).toHaveBeenCalledTimes(1);
+});
+
+it('does not reference panels that the standalone tab bar does not render', () => {
+  render(
+    <TabBar
+      tabs={tabs}
+      activeTabId="first"
+      splitTabId={null}
+      narrow={false}
+      {...createHandlers()}
+    />,
+  );
+
+  for (const tab of screen.getAllByRole('tab')) {
+    expect(tab).not.toHaveAttribute('aria-controls');
+  }
 });
 
 it('toggles split mode with an accessible pressed state', async () => {
@@ -175,4 +188,32 @@ it('keeps focus on the tab strip when the last document is closed in narrow mode
   rerender(<TabBar tabs={[]} activeTabId={null} splitTabId={null} narrow {...handlers} />);
   expect(screen.getByRole('tablist', { name: 'سندهای باز' })).toHaveFocus();
   expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+});
+
+it('moves keyboard focus to the nearest remaining tab when a named close button removes a document', async () => {
+  const user = userEvent.setup();
+  const handlers = createHandlers();
+  function ClosingTabs() {
+    const [openTabs, setOpenTabs] = useState(tabs);
+    return (
+      <TabBar
+        tabs={openTabs}
+        activeTabId={openTabs[0]?.tabId ?? null}
+        splitTabId={null}
+        narrow={false}
+        {...handlers}
+        onClose={(tabId) => setOpenTabs((current) => current.filter((tab) => tab.tabId !== tabId))}
+      />
+    );
+  }
+
+  render(<ClosingTabs />);
+  await user.tab();
+  await user.tab();
+  expect(screen.getByRole('button', { name: 'بستن First.md' })).toHaveFocus();
+  await user.keyboard('{Enter}');
+
+  expect(screen.queryByRole('tab', { name: 'First.md' })).not.toBeInTheDocument();
+  expect(screen.getByRole('tab', { name: 'Second.md' })).toHaveFocus();
+  expect(handlers.onActivate).not.toHaveBeenCalled();
 });

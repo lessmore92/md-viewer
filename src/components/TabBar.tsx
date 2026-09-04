@@ -52,7 +52,6 @@ export function TabBar({
                 type="button"
                 role="tab"
                 aria-selected={selected}
-                aria-controls={`tab-panel-${tab.tabId}`}
                 className={`tab-button${selected ? ' is-active' : ''}`}
                 title={fileName}
                 onClick={() => onActivate(tab.tabId)}
