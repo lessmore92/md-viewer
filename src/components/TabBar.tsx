@@ -1,4 +1,4 @@
-import type { ChangeEvent } from 'react';
+import { useRef, type ChangeEvent } from 'react';
 import type { WorkspaceTab } from '../app/workspace';
 import { Icon } from './Icon';
 
@@ -23,6 +23,7 @@ export function TabBar({
   onToggleSplit,
   onSelectSplit,
 }: TabBarProps) {
+  const tabStripRef = useRef<HTMLDivElement>(null);
   const splitEnabled = splitTabId !== null;
 
   const handleSplitSelection = (event: ChangeEvent<HTMLSelectElement>) => {
@@ -34,8 +35,14 @@ export function TabBar({
 
   return (
     <section className="tab-bar" aria-label="نوار سندها">
-      <div className="tab-strip" role="tablist" aria-label="سندهای باز">
-        {tabs.map((tab) => {
+      <div
+        ref={tabStripRef}
+        className="tab-strip"
+        role="tablist"
+        aria-label="سندهای باز"
+        tabIndex={-1}
+      >
+        {tabs.map((tab, index) => {
           const selected = tab.tabId === activeTabId;
           const fileName = tab.document.fileName;
 
@@ -46,7 +53,6 @@ export function TabBar({
                 role="tab"
                 aria-selected={selected}
                 aria-controls={`tab-panel-${tab.tabId}`}
-                tabIndex={selected ? 0 : -1}
                 className={`tab-button${selected ? ' is-active' : ''}`}
                 title={fileName}
                 onClick={() => onActivate(tab.tabId)}
@@ -60,6 +66,12 @@ export function TabBar({
                 title={`بستن ${fileName}`}
                 onClick={(event) => {
                   event.stopPropagation();
+                  const buttons =
+                    tabStripRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+                  // Move focus before React removes the close button; keyed tabs retain it.
+                  const nextFocus =
+                    buttons?.[index + 1] ?? buttons?.[index - 1] ?? tabStripRef.current;
+                  nextFocus?.focus();
                   onClose(tab.tabId);
                 }}
               >
