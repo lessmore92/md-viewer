@@ -1,7 +1,17 @@
 import { stat } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, net, protocol, shell } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  clipboard,
+  dialog,
+  ipcMain,
+  Menu,
+  net,
+  protocol,
+  shell,
+} from 'electron';
 import { IPC, type DocumentPayload } from './contracts';
 import { writeClipboardText } from './clipboard';
 import { createDocumentDelivery } from './document-delivery';

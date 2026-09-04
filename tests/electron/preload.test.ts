@@ -76,7 +76,10 @@ describe('preload bridge', () => {
   });
 
   it('exposes only intent-specific IPC invocations', async () => {
-    electron.invoke.mockResolvedValueOnce(null).mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+    electron.invoke
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(true);
 
     await expect(api.selectDocument()).resolves.toBeNull();
     await expect(api.openExternal('https://example.com')).resolves.toBe(true);
