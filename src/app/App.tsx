@@ -1,19 +1,13 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { DocumentPayload } from '../../electron/contracts';
-import { SidebarDrawer } from '../components/SidebarDrawer';
-import { TableOfContents } from '../components/TableOfContents';
+import { DocumentPane } from '../components/DocumentPane';
+import type { WorkspaceTab } from './workspace';
 import { Toolbar } from '../components/Toolbar';
 import { ReadingToolbar } from '../components/ReadingToolbar';
-import { ReadingStatus } from '../components/ReadingStatus';
 import { Icon } from '../components/Icon';
-import { extractHeadings } from '../markdown/headings';
-import { MarkdownView } from '../markdown/MarkdownView';
-import { scrollToHeading } from '../markdown/navigation';
-import { detectDirection } from '../utils/direction';
 import { applyTheme, readTheme, readStandardTheme, saveTheme } from './theme';
 import type { Theme, StandardTheme } from './theme';
-import { useActiveHeading } from './useActiveHeading';
 import {
   acceptedFiles,
   readBrowserFile,
@@ -36,7 +30,6 @@ export default function App() {
   const [storageError, setStorageError] = useState(false);
   const [preferences, setPreferences] = useState(readPreferences);
   const [focus, setFocus] = useState(false);
-  const [dragging, setDragging] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const focusTrigger = useRef<HTMLDivElement>(null);
   const offline = useOffline();
@@ -46,17 +39,24 @@ export default function App() {
     previousTheme.current = theme === 'ebook-reader' ? readStandardTheme() : theme;
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
   const [narrow, setNarrow] = useState(() => window.matchMedia?.(narrowQuery).matches ?? false);
   const latestRequest = useRef(0);
   const outlineId = useId();
-  const scrollRef = useRef<HTMLElement>(null);
-  const content = doc?.content ?? '';
-  const words = useMemo(
-    () => (content.trim() ? content.trim().split(/\s+/u).length : 0),
-    [content],
+  const [hasHeadings, setHasHeadings] = useState(false);
+  const [scrollTop, setScrollTop] = useState(0);
+  const tab = useMemo<WorkspaceTab | null>(
+    () =>
+      doc
+        ? {
+            tabId: doc.documentId,
+            document: doc,
+            documentKey: doc.documentId,
+            scrollTop,
+          }
+        : null,
+    [doc, scrollTop],
   );
-  const headings = useMemo(() => extractHeadings(content), [content]);
-  const [activeId, setActiveId] = useActiveHeading(headings, doc?.documentId, scrollRef);
 
   const acceptDocument = useCallback((next: DocumentPayload) => {
     setDoc(next);
@@ -64,7 +64,7 @@ export default function App() {
     if (!window.electronAPI) setStorageError(!saveBrowserDocument(next));
     setLoading(false);
     setDrawerOpen(false);
-    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    setScrollTop(0);
   }, []);
 
   const changePreferences = (patch: Partial<ReadingPreferences>) => {
@@ -187,15 +187,7 @@ export default function App() {
     setStorageError(!saveBrowserDocument(null));
   };
 
-  const navigate = useCallback(
-    (id: string) => {
-      scrollToHeading(id, scrollRef.current ?? document);
-      setActiveId(id);
-      setDrawerOpen(false);
-    },
-    [setActiveId],
-  );
-  const showSidebar = headings.length > 0 && !narrow && sidebarVisible && !focus;
+  const showSidebar = hasHeadings && !narrow && sidebarVisible && !focus;
 
   return (
     <div
@@ -229,7 +221,7 @@ export default function App() {
           fileName={doc?.fileName}
           dark={theme === 'dark'}
           ebook={theme === 'ebook-reader'}
-          hasHeadings={headings.length > 0}
+          hasHeadings={hasHeadings}
           sidebarOpen={narrow ? drawerOpen : showSidebar}
           sidebarId={outlineId}
           offlineLabel={offline.label}
@@ -272,147 +264,26 @@ export default function App() {
           />
         </div>
       ) : null}
-      <main
-        className={`reader-scroll${dragging ? ' is-dragging' : ''}`}
-        ref={scrollRef}
-        aria-label="محتوای سند"
-        tabIndex={-1}
-        onDragOver={(event) => {
-          if (!window.electronAPI && event.dataTransfer.types.includes('Files')) {
-            event.preventDefault();
-            event.dataTransfer.dropEffect = 'copy';
-            setDragging(true);
-          }
-        }}
-        onDragLeave={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false);
-        }}
-        onDrop={(event) => {
-          event.preventDefault();
-          setDragging(false);
-          if (!window.electronAPI) void openBrowserFile(event.dataTransfer.files[0]);
-        }}
-      >
-        <div className={`reader-layout${showSidebar ? ' with-sidebar' : ''}`}>
-          <div className="document-column">
-            {storageError ? (
-              <p className="storage-notice" role="alert">
-                مرورگر اجازهٔ ذخیره یا پاک کردن سند را نداد. تغییرات این نشست ممکن است بعد از بستن
-                صفحه حفظ نشوند.
-              </p>
-            ) : null}
-            {loading ? (
-              <p className="loading-status" role="status">
-                در حال باز کردن فایل…
-              </p>
-            ) : null}
-            {error ? (
-              <section className="document-error" role="alert">
-                <h1>باز کردن فایل ممکن نشد</h1>
-                <p>{error}</p>
-                <button className="button" onClick={() => void openDocument()} type="button">
-                  انتخاب فایل دیگر
-                </button>
-              </section>
-            ) : null}
-            {doc ? (
-              content.trim() ? (
-                <div className="document-sheet">
-                  <div className="document-heading">
-                    <span>
-                      <Icon name="book" />
-                      <bdi>{doc.fileName}</bdi>
-                    </span>
-                    <span>Markdown</span>
-                  </div>
-                  <article
-                    className="markdown-body"
-                    dir={detectDirection(content)}
-                    aria-label={doc.fileName}
-                  >
-                    <MarkdownView
-                      key={doc.documentId}
-                      content={content}
-                      documentId={doc.documentId}
-                      onNavigate={navigate}
-                    />
-                  </article>
-                </div>
-              ) : (
-                <p className="empty-document">این فایل خالی است.</p>
-              )
-            ) : !error ? (
-              <section className="empty-state">
-                <img
-                  className="empty-logo"
-                  src={`${import.meta.env.BASE_URL}icon.svg`}
-                  width="88"
-                  height="88"
-                  alt=""
-                />
-                <h1>فایل Markdown خود را باز کنید</h1>
-                <p>
-                  یادداشت‌ها، ایده‌ها و مستندات‌تان؛ در فضایی آرام و خوانا. یک فایل انتخاب کنید
-                  {!window.electronAPI ? ' یا همین‌جا رها کنید' : ''}.
-                </p>
-                <div className="empty-actions">
-                  <button
-                    className="button button-primary"
-                    type="button"
-                    onClick={() => void openDocument()}
-                  >
-                    <Icon name="open" />
-                    انتخاب سند
-                  </button>
-                  <button className="button" type="button" onClick={openSample}>
-                    <Icon name="book" />
-                    مشاهدهٔ نمونه
-                  </button>
-                </div>
-                <p className="supported-formats" dir="ltr">
-                  .md · .markdown · .mdown · .mkd{!window.electronAPI ? ' · .txt' : ''}
-                </p>
-                <div className="empty-notes">
-                  <span>
-                    <Icon name="check" />
-                    فارسی و انگلیسی، کنار هم
-                  </span>
-                  <span>
-                    <Icon name="check" />
-                    مطالعه با تنظیمات دلخواه
-                  </span>
-                </div>
-                <p className="privacy-note">فایل انتخابی شما روی همین دستگاه خوانده می‌شود.</p>
-              </section>
-            ) : null}
-          </div>
-          {showSidebar ? (
-            <aside className="desktop-sidebar" id={outlineId}>
-              <div className="outline-heading">
-                <h2>در این سند</h2>
-                <Icon name="outline" />
-              </div>
-              <TableOfContents headings={headings} activeId={activeId} onNavigate={navigate} />
-              <p className="outline-hint">برای جابه‌جایی، یک عنوان را انتخاب کنید.</p>
-            </aside>
-          ) : null}
-        </div>
-      </main>
-      {doc ? (
-        <ReadingStatus scrollRef={scrollRef} documentId={doc.documentId} words={words} />
-      ) : (
-        <footer className="welcome-footer">
-          <span>با حوصله بخوانید.</span>
-          <span>{offline.label}</span>
-        </footer>
-      )}
-      {narrow && headings.length > 0 ? (
-        <SidebarDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-          <div className="drawer-outline" id={outlineId}>
-            <TableOfContents headings={headings} activeId={activeId} onNavigate={navigate} />
-          </div>
-        </SidebarDrawer>
-      ) : null}
+      <DocumentPane
+        tab={tab}
+        paneId="primary"
+        showSidebar={showSidebar}
+        loading={loading}
+        error={error}
+        onNavigate={closeDrawer}
+        onClose={closeDocument}
+        onScrollTop={setScrollTop}
+        outlineId={outlineId}
+        narrow={narrow}
+        drawerOpen={drawerOpen}
+        onCloseDrawer={closeDrawer}
+        onHeadingsChange={setHasHeadings}
+        onOpen={() => void openDocument()}
+        onOpenSample={openSample}
+        onDropFile={(file) => void openBrowserFile(file)}
+        storageError={storageError}
+        offlineLabel={offline.label}
+      />
     </div>
   );
 }
