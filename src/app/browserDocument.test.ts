@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { documentKey } from './workspace';
 import { readBrowserFile, restoreBrowserDocument } from './browserDocument';
+import { documentKey } from './workspace';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -25,36 +25,38 @@ it('ignores malformed saved document data', () => {
   expect(restoreBrowserDocument()).toBeNull();
 });
 
-it('uses the same document key for the same file name and content', () => {
-  const first = documentKey({
-    fileName: 'note.md',
-    filePath: '',
-    documentId: 'first',
-    content: '# Note',
-  });
-  const second = documentKey({
-    fileName: 'note.md',
-    filePath: '',
-    documentId: 'second',
-    content: '# Note',
-  });
-
-  expect(first).toBe(second);
+it('maps matching browser documents to the same workspace key', () => {
+  expect(
+    documentKey({
+      fileName: 'note.md',
+      filePath: '',
+      documentId: 'first-render-id',
+      content: '# Shared',
+    }),
+  ).toBe(
+    documentKey({
+      fileName: 'note.md',
+      filePath: '',
+      documentId: 'second-render-id',
+      content: '# Shared',
+    }),
+  );
 });
 
-it('changes the document key when the content changes', () => {
-  const first = documentKey({
-    fileName: 'note.md',
-    filePath: '',
-    documentId: 'first',
-    content: '# Note',
-  });
-  const second = documentKey({
-    fileName: 'note.md',
-    filePath: '',
-    documentId: 'second',
-    content: '# Updated',
-  });
-
-  expect(first).not.toBe(second);
+it('changes the workspace key when browser document content changes', () => {
+  expect(
+    documentKey({
+      fileName: 'note.md',
+      filePath: '',
+      documentId: 'first-render-id',
+      content: '# Shared',
+    }),
+  ).not.toBe(
+    documentKey({
+      fileName: 'note.md',
+      filePath: '',
+      documentId: 'second-render-id',
+      content: '# Changed',
+    }),
+  );
 });

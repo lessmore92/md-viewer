@@ -1,5 +1,6 @@
-import { Icon } from './Icon';
+import { useRef, type ChangeEvent } from 'react';
 import type { WorkspaceTab } from '../app/workspace';
+import { Icon } from './Icon';
 
 export interface TabBarProps {
   tabs: WorkspaceTab[];
@@ -22,35 +23,54 @@ export function TabBar({
   onToggleSplit,
   onSelectSplit,
 }: TabBarProps) {
+  const tabStripRef = useRef<HTMLDivElement>(null);
   const splitEnabled = splitTabId !== null;
 
+  const handleSplitSelection = (event: ChangeEvent<HTMLSelectElement>) => {
+    const nextTabId = event.target.value;
+    if (!nextTabId || nextTabId === activeTabId) return;
+    if (!tabs.some((tab) => tab.tabId === nextTabId)) return;
+    onSelectSplit(nextTabId);
+  };
+
   return (
-    <div className="tab-bar">
-      <div role="tablist" aria-label="سندها" className="tab-bar-tabs">
-        {tabs.map((tab) => {
-          const active = tab.tabId === activeTabId;
+    <section className="tab-bar" aria-label="نوار سندها">
+      <div
+        ref={tabStripRef}
+        className="tab-strip"
+        role="tablist"
+        aria-label="سندهای باز"
+        tabIndex={-1}
+      >
+        {tabs.map((tab, index) => {
+          const selected = tab.tabId === activeTabId;
+          const fileName = tab.document.fileName;
+
           return (
-            <div key={tab.tabId} className={`tab-bar-item${active ? ' is-active' : ''}`}>
+            <div key={tab.tabId} className="tab-chip">
               <button
                 type="button"
                 role="tab"
-                aria-selected={active}
-                aria-controls={`workspace-tab-panel-${tab.tabId}`}
-                aria-label={tab.document.fileName}
-                title={tab.document.fileName}
-                tabIndex={active ? 0 : -1}
+                aria-selected={selected}
+                className={`tab-button${selected ? ' is-active' : ''}`}
+                title={fileName}
                 onClick={() => onActivate(tab.tabId)}
-                className="tab-bar-tab"
               >
-                <bdi>{tab.document.fileName}</bdi>
+                <bdi>{fileName}</bdi>
               </button>
               <button
                 type="button"
-                className="tab-bar-close"
-                aria-label={`بستن ${tab.document.fileName}`}
-                title={`بستن ${tab.document.fileName}`}
+                className="icon-button"
+                aria-label={`بستن ${fileName}`}
+                title={`بستن ${fileName}`}
                 onClick={(event) => {
                   event.stopPropagation();
+                  const buttons =
+                    tabStripRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+                  // Move focus before React removes the close button; keyed tabs retain it.
+                  const nextFocus =
+                    buttons?.[index + 1] ?? buttons?.[index - 1] ?? tabStripRef.current;
+                  nextFocus?.focus();
                   onClose(tab.tabId);
                 }}
               >
@@ -62,29 +82,21 @@ export function TabBar({
       </div>
 
       {!narrow ? (
-        <div className="tab-bar-split">
+        <div className="tab-bar-actions">
           <button
             type="button"
-            className="button button-quiet tab-bar-split-toggle"
+            className="button button-quiet"
             aria-pressed={splitEnabled}
-            aria-label={splitEnabled ? 'بستن split' : 'فعال کردن split'}
             onClick={onToggleSplit}
           >
-            <Icon name={splitEnabled ? 'close' : 'open'} />
+            <Icon name="focus" />
             {splitEnabled ? 'بستن split' : 'فعال کردن split'}
           </button>
 
           {splitEnabled ? (
-            <label className="tab-bar-split-select">
+            <label>
               <span>سند پنل دوم</span>
-              <select
-                aria-label="سند پنل دوم"
-                value={splitTabId}
-                onChange={(event) => {
-                  const next = event.currentTarget.value;
-                  if (next && next !== activeTabId) onSelectSplit(next);
-                }}
-              >
+              <select value={splitTabId ?? ''} onChange={handleSplitSelection}>
                 {tabs.map((tab) => (
                   <option key={tab.tabId} value={tab.tabId} disabled={tab.tabId === activeTabId}>
                     {tab.document.fileName}
@@ -95,6 +107,6 @@ export function TabBar({
           ) : null}
         </div>
       ) : null}
-    </div>
+    </section>
   );
 }

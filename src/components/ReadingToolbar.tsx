@@ -1,17 +1,26 @@
 import type { ReadingPreferences } from '../app/readingPreferences';
 import { Icon } from './Icon';
 
-interface Props {
+export interface ReadingToolbarProps {
   preferences: ReadingPreferences;
+  restoreTabs: boolean;
+  onRestoreTabsChange: (value: boolean) => void;
   onChange: (patch: Partial<ReadingPreferences>) => void;
   onReset: () => void;
   onFocus: () => void;
 }
 
-export function ReadingToolbar({ preferences, onChange, onReset, onFocus }: Props) {
+export function ReadingToolbar({
+  preferences,
+  restoreTabs,
+  onRestoreTabsChange,
+  onChange,
+  onReset,
+  onFocus,
+}: ReadingToolbarProps) {
   return (
-    <section className="reading-toolbar" aria-label="ابزارهای خواندن">
-      <div className="reading-controls">
+    <section className="reading-toolbar" aria-label="ابزارهای خواندن" style={{ flexWrap: 'wrap' }}>
+      <div className="reading-controls" style={{ flexWrap: 'wrap' }}>
         <div className="font-control" role="group" aria-label="اندازهٔ متن" dir="ltr">
           <button
             className="icon-button"
@@ -59,6 +68,14 @@ export function ReadingToolbar({ preferences, onChange, onReset, onFocus }: Prop
             <option value="48">متعادل</option>
             <option value="60">عریض</option>
           </select>
+        </label>
+        <label className="reading-select">
+          <input
+            type="checkbox"
+            checked={restoreTabs}
+            onChange={(event) => onRestoreTabsChange(event.target.checked)}
+          />
+          <span>بازگردانی تب‌ها هنگام شروع</span>
         </label>
         <button
           className="icon-button"

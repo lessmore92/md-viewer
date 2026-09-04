@@ -1,25 +1,25 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { DocumentPayload } from '../../electron/contracts';
-import { SidebarDrawer } from '../components/SidebarDrawer';
-import { TableOfContents } from '../components/TableOfContents';
+import { DocumentPane } from '../components/DocumentPane';
+import { TabBar } from '../components/TabBar';
+import {
+  activateTab,
+  closeTab,
+  createWorkspace,
+  openInWorkspace,
+  readWorkspace,
+  saveRestoreTabs,
+  saveWorkspace,
+  setSplitTab,
+} from './workspace';
+import type { WorkspaceState } from './workspace';
 import { Toolbar } from '../components/Toolbar';
 import { ReadingToolbar } from '../components/ReadingToolbar';
-import { ReadingStatus } from '../components/ReadingStatus';
 import { Icon } from '../components/Icon';
-import { extractHeadings } from '../markdown/headings';
-import { MarkdownView } from '../markdown/MarkdownView';
-import { scrollToHeading } from '../markdown/navigation';
-import { detectDirection } from '../utils/direction';
 import { applyTheme, readTheme, readStandardTheme, saveTheme } from './theme';
 import type { Theme, StandardTheme } from './theme';
-import { useActiveHeading } from './useActiveHeading';
-import {
-  acceptedFiles,
-  readBrowserFile,
-  restoreBrowserDocument,
-  saveBrowserDocument,
-} from './browserDocument';
+import { acceptedFiles, readBrowserFile } from './browserDocument';
 import { defaultPreferences, readPreferences, savePreferences } from './readingPreferences';
 import type { ReadingPreferences } from './readingPreferences';
 import { useOffline } from './useOffline';
@@ -27,16 +27,34 @@ import sample from './sample.md?raw';
 
 const narrowQuery = '(max-width: 960px)';
 
+function initialWorkspace(): WorkspaceState {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return createWorkspace();
+    const saved = readWorkspace();
+    if (!saved.restoreTabs) return createWorkspace(false);
+    return window.matchMedia?.(narrowQuery).matches ? setSplitTab(saved, null) : saved;
+  } catch {
+    return createWorkspace();
+  }
+}
+
+const paneStyle: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  minHeight: 0,
+  minWidth: 0,
+};
+
 export default function App() {
-  const [doc, setDoc] = useState<DocumentPayload | null>(() =>
-    window.electronAPI ? null : restoreBrowserDocument(),
-  );
+  const [workspace, setWorkspace] = useState(initialWorkspace);
+  const primaryTab = workspace.tabs.find((tab) => tab.tabId === workspace.activeTabId) ?? null;
+  const secondaryTab = workspace.tabs.find((tab) => tab.tabId === workspace.splitTabId) ?? null;
+  const doc = primaryTab?.document;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [storageError, setStorageError] = useState(false);
   const [preferences, setPreferences] = useState(readPreferences);
   const [focus, setFocus] = useState(false);
-  const [dragging, setDragging] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const focusTrigger = useRef<HTMLDivElement>(null);
   const offline = useOffline();
@@ -46,26 +64,46 @@ export default function App() {
     previousTheme.current = theme === 'ebook-reader' ? readStandardTheme() : theme;
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
   const [narrow, setNarrow] = useState(() => window.matchMedia?.(narrowQuery).matches ?? false);
   const latestRequest = useRef(0);
+  const pendingRequests = useRef(new Set<number>());
+  const lastPersistedWorkspace = useRef<WorkspaceState | null>(null);
   const outlineId = useId();
-  const scrollRef = useRef<HTMLElement>(null);
-  const content = doc?.content ?? '';
-  const words = useMemo(
-    () => (content.trim() ? content.trim().split(/\s+/u).length : 0),
-    [content],
-  );
-  const headings = useMemo(() => extractHeadings(content), [content]);
-  const [activeId, setActiveId] = useActiveHeading(headings, doc?.documentId, scrollRef);
+  const [hasHeadings, setHasHeadings] = useState(false);
 
-  const acceptDocument = useCallback((next: DocumentPayload) => {
-    setDoc(next);
+  const acceptDocument = useCallback((next: DocumentPayload, request?: number) => {
+    if (request === undefined) {
+      // An OS-opened document cancels dialog results that are no longer relevant.
+      pendingRequests.current.clear();
+      setLoading(false);
+    }
+    setWorkspace((current) => openInWorkspace(current, next));
     setError('');
-    if (!window.electronAPI) setStorageError(!saveBrowserDocument(next));
-    setLoading(false);
     setDrawerOpen(false);
-    if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, []);
+
+  useEffect(() => {
+    const previous = lastPersistedWorkspace.current;
+    // Scroll offsets are session-only; avoid rewriting document content on every scroll.
+    if (
+      previous &&
+      previous.activeTabId === workspace.activeTabId &&
+      previous.splitTabId === workspace.splitTabId &&
+      previous.restoreTabs === workspace.restoreTabs &&
+      previous.tabs.length === workspace.tabs.length &&
+      previous.tabs.every(
+        (tab, index) =>
+          tab.tabId === workspace.tabs[index].tabId &&
+          tab.document === workspace.tabs[index].document,
+      )
+    )
+      return;
+    lastPersistedWorkspace.current = workspace;
+    const savedWorkspace = saveWorkspace(workspace);
+    const savedPreference = saveRestoreTabs(workspace.restoreTabs);
+    setStorageError(!savedWorkspace || !savedPreference);
+  }, [workspace]);
 
   const changePreferences = (patch: Partial<ReadingPreferences>) => {
     const next = { ...preferences, ...patch };
@@ -102,15 +140,10 @@ export default function App() {
   }, [focus, exitFocus]);
 
   useEffect(() => {
-    const invalidateRequests = () => {
-      ++latestRequest.current;
-    };
-    const unsubscribe = window.electronAPI?.onDocumentOpened((next) => {
-      invalidateRequests();
-      acceptDocument(next);
-    });
+    const pending = pendingRequests.current;
+    const unsubscribe = window.electronAPI?.onDocumentOpened(acceptDocument);
     return () => {
-      invalidateRequests();
+      pending.clear();
       unsubscribe?.();
     };
   }, [acceptDocument]);
@@ -121,6 +154,7 @@ export default function App() {
     const update = () => {
       setNarrow(media.matches);
       setDrawerOpen(false);
+      if (media.matches) setWorkspace((current) => setSplitTab(current, null));
     };
     media.addEventListener('change', update);
     return () => media.removeEventListener('change', update);
@@ -131,44 +165,46 @@ export default function App() {
     saveTheme(theme);
   }, [theme]);
 
-  const openDocument = async () => {
-    if (!window.electronAPI) {
+  const runOpen = async (
+    operation: () => Promise<DocumentPayload | null>,
+    errorMessage: (reason: unknown) => string,
+  ) => {
+    const request = ++latestRequest.current;
+    pendingRequests.current.add(request);
+    setLoading(true);
+    setError('');
+    try {
+      const next = await operation();
+      if (pendingRequests.current.has(request) && next) acceptDocument(next, request);
+    } catch (reason) {
+      if (pendingRequests.current.has(request) && request === latestRequest.current)
+        setError(errorMessage(reason));
+    } finally {
+      if (pendingRequests.current.delete(request)) setLoading(pendingRequests.current.size > 0);
+    }
+  };
+
+  const openDocument = () => {
+    const api = window.electronAPI;
+    if (!api) {
       fileInput.current?.click();
       return;
     }
-    const request = ++latestRequest.current;
-    setLoading(true);
-    setError('');
-    try {
-      const next = await window.electronAPI.selectDocument();
-      if (request !== latestRequest.current) return;
-      if (next) acceptDocument(next);
-    } catch {
-      if (request === latestRequest.current)
-        setError('ممکن است فایل حذف شده باشد یا اجازهٔ خواندن آن را نداشته باشید.');
-    } finally {
-      if (request === latestRequest.current) setLoading(false);
-    }
+    return runOpen(
+      () => api.selectDocument(),
+      () => 'ممکن است فایل حذف شده باشد یا اجازهٔ خواندن آن را نداشته باشید.',
+    );
   };
 
-  const openBrowserFile = async (file?: File) => {
+  const openBrowserFile = (file?: File) => {
     if (!file) return;
-    const request = ++latestRequest.current;
-    setLoading(true);
-    setError('');
-    try {
-      const next = await readBrowserFile(file);
-      if (request === latestRequest.current) acceptDocument(next);
-    } catch (reason) {
-      if (request === latestRequest.current)
-        setError(reason instanceof Error ? reason.message : 'خواندن فایل ممکن نشد.');
-    } finally {
-      if (request === latestRequest.current) setLoading(false);
-    }
+    return runOpen(
+      () => readBrowserFile(file),
+      (reason) => (reason instanceof Error ? reason.message : 'خواندن فایل ممکن نشد.'),
+    );
   };
 
   const openSample = () => {
-    ++latestRequest.current;
     acceptDocument({
       content: sample,
       documentId: 'sample',
@@ -177,28 +213,52 @@ export default function App() {
     });
   };
 
-  const closeDocument = () => {
+  const closeWorkspaceTab = (tabId: string) => {
     ++latestRequest.current;
-    setDoc(null);
+    if (tabId === workspace.activeTabId) {
+      pendingRequests.current.clear();
+      setLoading(false);
+    }
+    setWorkspace((current) => closeTab(current, tabId));
     setError('');
-    setLoading(false);
     setFocus(false);
     setDrawerOpen(false);
-    setStorageError(!saveBrowserDocument(null));
   };
 
-  const navigate = useCallback(
-    (id: string) => {
-      scrollToHeading(id, scrollRef.current ?? document);
-      setActiveId(id);
-      setDrawerOpen(false);
-    },
-    [setActiveId],
-  );
-  const showSidebar = headings.length > 0 && !narrow && sidebarVisible && !focus;
+  const closeDocument = () => {
+    if (primaryTab) closeWorkspaceTab(primaryTab.tabId);
+  };
+
+  const activateWorkspaceTab = (tabId: string) => {
+    setWorkspace((current) => activateTab(current, tabId));
+    setDrawerOpen(false);
+  };
+
+  const toggleSplit = () => {
+    if (narrow || workspace.tabs.length < 2) return;
+    setWorkspace((current) =>
+      setSplitTab(
+        current,
+        current.splitTabId
+          ? null
+          : (current.tabs.find((tab) => tab.tabId !== current.activeTabId)?.tabId ?? null),
+      ),
+    );
+  };
+
+  const updateScrollTop = (tabId: string, scrollTop: number) => {
+    setWorkspace((current) => ({
+      ...current,
+      tabs: current.tabs.map((tab) =>
+        tab.tabId === tabId && tab.scrollTop !== scrollTop ? { ...tab, scrollTop } : tab,
+      ),
+    }));
+  };
+
+  const showSidebar = hasHeadings && !narrow && sidebarVisible && !focus;
 
   return (
-    <div
+    <main
       className={`app-shell${focus ? ' focus-mode' : ''}`}
       dir="rtl"
       lang="fa"
@@ -229,7 +289,7 @@ export default function App() {
           fileName={doc?.fileName}
           dark={theme === 'dark'}
           ebook={theme === 'ebook-reader'}
-          hasHeadings={headings.length > 0}
+          hasHeadings={hasHeadings}
           sidebarOpen={narrow ? drawerOpen : showSidebar}
           sidebarId={outlineId}
           offlineLabel={offline.label}
@@ -263,6 +323,10 @@ export default function App() {
         <div ref={focusTrigger}>
           <ReadingToolbar
             preferences={preferences}
+            restoreTabs={workspace.restoreTabs}
+            onRestoreTabsChange={(restoreTabs) =>
+              setWorkspace((current) => ({ ...current, restoreTabs }))
+            }
             onChange={changePreferences}
             onReset={() => changePreferences(defaultPreferences)}
             onFocus={() => {
@@ -272,147 +336,81 @@ export default function App() {
           />
         </div>
       ) : null}
-      <main
-        className={`reader-scroll${dragging ? ' is-dragging' : ''}`}
-        ref={scrollRef}
-        aria-label="محتوای سند"
-        tabIndex={-1}
-        onDragOver={(event) => {
-          if (!window.electronAPI && event.dataTransfer.types.includes('Files')) {
-            event.preventDefault();
-            event.dataTransfer.dropEffect = 'copy';
-            setDragging(true);
-          }
-        }}
-        onDragLeave={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false);
-        }}
-        onDrop={(event) => {
-          event.preventDefault();
-          setDragging(false);
-          if (!window.electronAPI) void openBrowserFile(event.dataTransfer.files[0]);
-        }}
-      >
-        <div className={`reader-layout${showSidebar ? ' with-sidebar' : ''}`}>
-          <div className="document-column">
-            {storageError ? (
-              <p className="storage-notice" role="alert">
-                مرورگر اجازهٔ ذخیره یا پاک کردن سند را نداد. تغییرات این نشست ممکن است بعد از بستن
-                صفحه حفظ نشوند.
-              </p>
-            ) : null}
-            {loading ? (
-              <p className="loading-status" role="status">
-                در حال باز کردن فایل…
-              </p>
-            ) : null}
-            {error ? (
-              <section className="document-error" role="alert">
-                <h1>باز کردن فایل ممکن نشد</h1>
-                <p>{error}</p>
-                <button className="button" onClick={() => void openDocument()} type="button">
-                  انتخاب فایل دیگر
-                </button>
-              </section>
-            ) : null}
-            {doc ? (
-              content.trim() ? (
-                <div className="document-sheet">
-                  <div className="document-heading">
-                    <span>
-                      <Icon name="book" />
-                      <bdi>{doc.fileName}</bdi>
-                    </span>
-                    <span>Markdown</span>
-                  </div>
-                  <article
-                    className="markdown-body"
-                    dir={detectDirection(content)}
-                    aria-label={doc.fileName}
-                  >
-                    <MarkdownView
-                      key={doc.documentId}
-                      content={content}
-                      documentId={doc.documentId}
-                      onNavigate={navigate}
-                    />
-                  </article>
-                </div>
-              ) : (
-                <p className="empty-document">این فایل خالی است.</p>
-              )
-            ) : !error ? (
-              <section className="empty-state">
-                <img
-                  className="empty-logo"
-                  src={`${import.meta.env.BASE_URL}icon.svg`}
-                  width="88"
-                  height="88"
-                  alt=""
-                />
-                <h1>فایل Markdown خود را باز کنید</h1>
-                <p>
-                  یادداشت‌ها، ایده‌ها و مستندات‌تان؛ در فضایی آرام و خوانا. یک فایل انتخاب کنید
-                  {!window.electronAPI ? ' یا همین‌جا رها کنید' : ''}.
-                </p>
-                <div className="empty-actions">
-                  <button
-                    className="button button-primary"
-                    type="button"
-                    onClick={() => void openDocument()}
-                  >
-                    <Icon name="open" />
-                    انتخاب سند
-                  </button>
-                  <button className="button" type="button" onClick={openSample}>
-                    <Icon name="book" />
-                    مشاهدهٔ نمونه
-                  </button>
-                </div>
-                <p className="supported-formats" dir="ltr">
-                  .md · .markdown · .mdown · .mkd{!window.electronAPI ? ' · .txt' : ''}
-                </p>
-                <div className="empty-notes">
-                  <span>
-                    <Icon name="check" />
-                    فارسی و انگلیسی، کنار هم
-                  </span>
-                  <span>
-                    <Icon name="check" />
-                    مطالعه با تنظیمات دلخواه
-                  </span>
-                </div>
-                <p className="privacy-note">فایل انتخابی شما روی همین دستگاه خوانده می‌شود.</p>
-              </section>
-            ) : null}
-          </div>
-          {showSidebar ? (
-            <aside className="desktop-sidebar" id={outlineId}>
-              <div className="outline-heading">
-                <h2>در این سند</h2>
-                <Icon name="outline" />
-              </div>
-              <TableOfContents headings={headings} activeId={activeId} onNavigate={navigate} />
-              <p className="outline-hint">برای جابه‌جایی، یک عنوان را انتخاب کنید.</p>
-            </aside>
+      {workspace.tabs.length > 0 && !focus ? (
+        <div className="workspace-tabs">
+          <TabBar
+            tabs={workspace.tabs}
+            activeTabId={workspace.activeTabId}
+            splitTabId={workspace.splitTabId}
+            narrow={narrow || workspace.tabs.length < 2}
+            onActivate={activateWorkspaceTab}
+            onClose={closeWorkspaceTab}
+            onToggleSplit={toggleSplit}
+            onSelectSplit={(tabId) => setWorkspace((current) => setSplitTab(current, tabId))}
+          />
+          {!narrow && workspace.tabs.length < 2 ? (
+            <button className="button button-quiet" type="button" disabled aria-pressed={false}>
+              <Icon name="focus" />
+              فعال کردن split
+            </button>
           ) : null}
         </div>
-      </main>
-      {doc ? (
-        <ReadingStatus scrollRef={scrollRef} documentId={doc.documentId} words={words} />
-      ) : (
-        <footer className="welcome-footer">
-          <span>با حوصله بخوانید.</span>
-          <span>{offline.label}</span>
-        </footer>
-      )}
-      {narrow && headings.length > 0 ? (
-        <SidebarDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-          <div className="drawer-outline" id={outlineId}>
-            <TableOfContents headings={headings} activeId={activeId} onNavigate={navigate} />
-          </div>
-        </SidebarDrawer>
       ) : null}
-    </div>
+      {storageError ? (
+        <p className="storage-notice" role="alert">
+          ذخیرهٔ تب‌ها یا تنظیمات بازگردانی روی این دستگاه ممکن نشد. تغییرات این نشست ممکن است بعد
+          از بستن صفحه حفظ نشوند.
+        </p>
+      ) : null}
+      <div
+        className={`workspace-panes${secondaryTab && !narrow ? ' is-split' : ''}`}
+        style={{
+          display: 'grid',
+          flex: 1,
+          minHeight: 0,
+          gridTemplateColumns:
+            secondaryTab && !narrow ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
+        }}
+      >
+        <div className="document-pane" style={paneStyle}>
+          <DocumentPane
+            tab={primaryTab}
+            paneId="primary"
+            showSidebar={showSidebar}
+            loading={loading}
+            error={error}
+            onNavigate={closeDrawer}
+            onClose={closeDocument}
+            onScrollTop={(value) => {
+              if (primaryTab) updateScrollTop(primaryTab.tabId, value);
+            }}
+            outlineId={outlineId}
+            narrow={narrow}
+            drawerOpen={drawerOpen}
+            onCloseDrawer={closeDrawer}
+            onHeadingsChange={setHasHeadings}
+            onOpen={() => void openDocument()}
+            onOpenSample={openSample}
+            onDropFile={(file) => void openBrowserFile(file)}
+            offlineLabel={offline.label}
+          />
+        </div>
+        {secondaryTab && !narrow ? (
+          <div className="document-pane" style={paneStyle}>
+            <DocumentPane
+              tab={secondaryTab}
+              paneId="secondary"
+              showSidebar={sidebarVisible && !focus}
+              loading={false}
+              error=""
+              onNavigate={closeDrawer}
+              onClose={() => closeWorkspaceTab(secondaryTab.tabId)}
+              onScrollTop={(value) => updateScrollTop(secondaryTab.tabId, value)}
+              onDropFile={(file) => void openBrowserFile(file)}
+            />
+          </div>
+        ) : null}
+      </div>
+    </main>
   );
 }

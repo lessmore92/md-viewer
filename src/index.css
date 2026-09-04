@@ -870,6 +870,235 @@ summary {
   }
 }
 
+/* Keep workspace chrome fixed while each document owns its scrolling region. */
+.workspace-tabs {
+  display: flex;
+  align-items: center;
+  flex: none;
+  min-width: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--chrome);
+}
+.tab-bar {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  gap: 16px;
+  padding: 6px 24px;
+  background: var(--chrome);
+}
+.tab-strip {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  gap: 4px;
+  padding: 4px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-padding-inline: 4px;
+}
+.tab-chip {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  max-width: min(20rem, 80vw);
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: var(--muted);
+}
+.tab-chip:has(.is-active) {
+  border-color: var(--border);
+  background: var(--surface);
+  box-shadow: inset 0 -2px var(--accent);
+}
+.tab-button {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out;
+}
+.tab-button bdi {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tab-button:hover {
+  background: var(--button-hover);
+  color: var(--ink);
+}
+.tab-button.is-active {
+  color: var(--accent);
+  font-weight: 700;
+}
+.tab-chip .icon-button {
+  width: 32px;
+  height: 32px;
+  margin-inline-end: 2px;
+}
+.tab-button:focus-visible,
+.tab-chip .icon-button:focus-visible {
+  outline-offset: -2px;
+}
+.tab-bar-actions {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: 12px;
+  padding-inline-start: 16px;
+  border-inline-start: 1px solid var(--border);
+}
+.tab-bar-actions .button[aria-pressed='true'] {
+  background: var(--accent-muted);
+  color: var(--accent);
+}
+.tab-bar-actions label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.tab-bar-actions select {
+  width: clamp(8rem, 15vw, 14rem);
+  min-width: 0;
+  min-height: 34px;
+  padding: 5px 7px;
+  border: 1px solid var(--control-border);
+  border-radius: 6px;
+  background: var(--control);
+  color: var(--ink);
+  font: inherit;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.workspace-tabs > .button:disabled {
+  flex: none;
+  margin-inline-end: 28px;
+  opacity: 0.45;
+  cursor: default;
+  background: transparent;
+}
+.workspace-panes,
+.split-layout {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.split-layout {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.document-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.document-pane > .reader-scroll {
+  min-width: 0;
+}
+.document-pane > .reading-status,
+.document-pane > .welcome-footer {
+  flex: none;
+}
+/* App currently names the Split container workspace-panes.is-split. */
+:is(.workspace-panes.is-split, .split-layout) > .document-pane + .document-pane {
+  border-inline-start: 1px solid var(--border);
+}
+:is(.workspace-panes.is-split, .split-layout) .reader-layout {
+  padding: 20px 20px 48px;
+  gap: 20px;
+}
+:is(.workspace-panes.is-split, .split-layout) .reader-layout.with-sidebar {
+  grid-template-columns: minmax(0, var(--reader-width, 48rem));
+}
+/* Compact outlines stay available without squeezing the reading column. */
+:is(.workspace-panes.is-split, .split-layout) .desktop-sidebar {
+  position: static;
+  grid-row: 1;
+  max-height: 10rem;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+:is(.workspace-panes.is-split, .split-layout) .outline-hint {
+  display: none;
+}
+:is(.workspace-panes.is-split, .split-layout) .document-heading {
+  gap: 8px;
+  padding: 10px 20px;
+  min-width: 0;
+}
+:is(.workspace-panes.is-split, .split-layout) .markdown-body {
+  padding-inline: 24px;
+}
+:is(.workspace-panes.is-split, .split-layout) .reading-status {
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding-inline: 20px;
+}
+:is(.workspace-panes.is-split, .split-layout) .reading-stats {
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+:is(.workspace-panes.is-split, .split-layout) .reading-progress {
+  margin-inline-start: auto;
+}
+
+/* Focus keeps the primary document full-width while retaining Split state for exit. */
+.focus-mode :is(.workspace-panes, .split-layout) {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+.focus-mode :is(.workspace-tabs, .tab-bar),
+.focus-mode .document-pane + .document-pane {
+  display: none !important;
+}
+.focus-mode :is(.workspace-panes.is-split, .split-layout) .reader-layout {
+  padding: 32px 32px 64px;
+}
+.focus-mode :is(.workspace-panes.is-split, .split-layout) .markdown-body {
+  padding-inline: 40px;
+}
+
+@media (max-width: 960px) {
+  :is(.workspace-panes, .split-layout) {
+    /* Override App's inline grid while the media-query listener catches up. */
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .workspace-tabs > .button,
+  .tab-bar-actions,
+  .document-pane + .document-pane {
+    display: none !important;
+  }
+  .tab-bar {
+    padding-inline: 16px;
+  }
+}
+@media (max-width: 560px) {
+  .tab-bar {
+    padding: 4px 8px;
+  }
+  .tab-button {
+    min-height: 40px;
+  }
+  .tab-chip .icon-button {
+    width: 36px;
+    height: 36px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
