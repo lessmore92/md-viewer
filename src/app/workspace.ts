@@ -24,7 +24,7 @@ function createTabId(): string {
   );
 }
 
-function hasOwn(value: unknown, key: string): boolean {
+function hasOwn(value: unknown, key: string): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && key in value;
 }
 
@@ -103,7 +103,7 @@ export function createWorkspace(restoreTabs = true): WorkspaceState {
 }
 
 export function documentKey(document: DocumentPayload): string {
-  if (document.filePath) return `path:${document.filePath.replaceAll('\\', '/').toLowerCase()}`;
+  if (document.filePath) return `path:${document.filePath.replace(/\\/g, '/').toLowerCase()}`;
   return `content:${document.fileName}\u0000${document.content}`;
 }
 
@@ -193,7 +193,7 @@ export function readWorkspace(): WorkspaceState {
   if (raw === null) return migrateLegacyWorkspace(restoreTabs);
 
   try {
-    const parsed = JSON.parse(raw);
+    const parsed: unknown = JSON.parse(raw);
     if (
       typeof parsed !== 'object' ||
       parsed === null ||
