@@ -11,7 +11,7 @@ interface ElectronAPI {
 
 declare global {
   interface Window {
-    electronAPI: ElectronAPI;
+    electronAPI?: ElectronAPI;
   }
 }
 

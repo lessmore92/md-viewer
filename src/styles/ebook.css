@@ -1,0 +1,141 @@
+/* The toggle remains discoverable in every appearance. */
+.ebook-toggle[aria-pressed='true'] {
+  color: var(--accent);
+  background: var(--accent-muted);
+  border-color: var(--accent);
+}
+
+:root[data-theme='ebook-reader'] {
+  color-scheme: light;
+  --canvas: oklch(90% 0.009 100);
+  --chrome: oklch(91% 0.009 100);
+  --surface: oklch(95% 0.009 100);
+  --surface-muted: oklch(90% 0.009 100);
+  --control: oklch(95% 0.009 100);
+  --ink: oklch(27% 0.006 100);
+  --heading: oklch(21% 0.006 100);
+  --muted: oklch(44% 0.006 100);
+  --border: oklch(76% 0.009 100);
+  --control-border: oklch(55% 0.006 100);
+  --accent: var(--ink);
+  --accent-muted: oklch(85% 0.009 100);
+  --primary: var(--ink);
+  --primary-ink: var(--surface);
+  --primary-hover: oklch(36% 0.006 100);
+  --primary-active: oklch(21% 0.006 100);
+  --button-hover: oklch(85% 0.009 100);
+  --success: var(--ink);
+  --danger: var(--ink);
+  --danger-muted: var(--surface-muted);
+  --scrollbar: oklch(55% 0.006 100);
+}
+
+:root[data-theme='ebook-reader'] .markdown-body {
+  color-scheme: light;
+  --focus-outlineColor: var(--ink);
+  --fgColor-default: var(--ink);
+  --fgColor-muted: var(--muted);
+  --fgColor-accent: var(--ink);
+  --fgColor-success: var(--ink);
+  --fgColor-attention: var(--ink);
+  --fgColor-danger: var(--ink);
+  --fgColor-done: var(--ink);
+  --bgColor-default: var(--surface);
+  --bgColor-muted: var(--surface-muted);
+  --bgColor-neutral-muted: var(--surface-muted);
+  --bgColor-attention-muted: var(--accent-muted);
+  --borderColor-default: var(--border);
+  --borderColor-muted: var(--border);
+  --borderColor-neutral-muted: var(--border);
+  --borderColor-accent-emphasis: var(--muted);
+  --borderColor-success-emphasis: var(--muted);
+  --borderColor-attention-emphasis: var(--muted);
+  --borderColor-danger-emphasis: var(--muted);
+  --borderColor-done-emphasis: var(--muted);
+  --syntax-comment: var(--muted);
+  --syntax-keyword: var(--ink);
+  --syntax-string: var(--ink);
+  --syntax-number: var(--ink);
+  --syntax-title: var(--ink);
+  --syntax-variable: var(--ink);
+  font-family: Georgia, Vazirmatn, serif;
+  padding-block: 40px 64px;
+}
+
+:root[data-theme='ebook-reader'] .document-sheet {
+  border: 0;
+  border-radius: 2px;
+}
+
+:root[data-theme='ebook-reader'] .document-heading {
+  justify-content: center;
+  margin-inline: 40px;
+  padding-inline: 0;
+}
+
+:root[data-theme='ebook-reader'] .document-heading svg,
+:root[data-theme='ebook-reader'] .document-heading > span:last-child {
+  display: none;
+}
+
+:root[data-theme='ebook-reader'] .markdown-body :is(h1, h2, h3, h4, h5, h6) {
+  color: var(--heading);
+  border-bottom: 0;
+}
+
+:root[data-theme='ebook-reader'] .markdown-body h1 {
+  font-size: 1.8em;
+  text-align: center;
+  line-height: 1.6;
+  margin-bottom: 1.25em;
+  text-wrap: balance;
+}
+
+:root[data-theme='ebook-reader'] .markdown-body h2 {
+  font-size: 1.4em;
+  margin-top: 1.75em;
+}
+
+:root[data-theme='ebook-reader'] .markdown-body a {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+:root[data-theme='ebook-reader'] .markdown-body :is(.hljs-keyword, .hljs-title) {
+  font-weight: 700;
+}
+
+:root[data-theme='ebook-reader'] .markdown-body .hljs-comment {
+  font-style: italic;
+}
+
+:root[data-theme='ebook-reader'] :is(.toolbar-logo, .empty-logo, .markdown-body img) {
+  filter: grayscale(1);
+}
+
+:root[data-theme='ebook-reader'] ::selection {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+:root[data-theme='ebook-reader'] *,
+:root[data-theme='ebook-reader'] *::before,
+:root[data-theme='ebook-reader'] *::after {
+  transition: none !important;
+  animation: none !important;
+}
+
+@media (max-width: 560px) {
+  .toolbar-actions .ebook-toggle {
+    font-size: 12px;
+    padding-inline: 8px;
+  }
+
+  :root[data-theme='ebook-reader'] .document-heading {
+    margin-inline: 22px;
+  }
+
+  :root[data-theme='ebook-reader'] .markdown-body {
+    padding: 28px 22px 48px;
+  }
+}

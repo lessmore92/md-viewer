@@ -1,4 +1,4 @@
-import { createElement, isValidElement, useEffect, useMemo } from 'react';
+import { createElement, isValidElement, memo, useEffect, useMemo } from 'react';
 import type { ComponentPropsWithoutRef, ElementType, ReactNode } from 'react';
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import type { Components, ExtraProps } from 'react-markdown';
@@ -115,6 +115,8 @@ function createComponents(
         <a
           {...domProps}
           href={safeHref}
+          target={kind === 'external' ? '_blank' : undefined}
+          rel={kind === 'external' ? 'noopener noreferrer' : undefined}
           onClick={(event) => {
             props.onClick?.(event);
             if (event.defaultPrevented) return;
@@ -122,7 +124,7 @@ function createComponents(
             if (kind === 'fragment') {
               event.preventDefault();
               onNavigate(fragmentId(href));
-            } else if (kind === 'external') {
+            } else if (kind === 'external' && window.electronAPI) {
               event.preventDefault();
               void window.electronAPI.openExternal(href);
             } else if (kind === 'relative' || kind === 'unsafe') {
@@ -168,7 +170,7 @@ function markdownUrlTransform(value: string, key: string): string {
   return defaultUrlTransform(value);
 }
 
-export function MarkdownView({
+export const MarkdownView = memo(function MarkdownView({
   content,
   documentId,
   onHeadingsChange,
@@ -195,4 +197,4 @@ export function MarkdownView({
       {content}
     </ReactMarkdown>
   );
-}
+});

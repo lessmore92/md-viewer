@@ -1,0 +1,15 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 100 100"
+  role="img"
+  aria-label="MD Viewer — open book"
+  color="#0969da"
+>
+  <rect x="4" y="4" width="92" height="92" rx="23" fill="currentColor" />
+  <g color="#fff">
+    <path
+      d="M22 29c11-2 21 2 26 9v36c-7-6-16-9-26-7V29Zm56 0c-11-2-21 2-26 9v36c7-6 16-9 26-7V29Z"
+      fill="currentColor"
+    />
+  </g>
+</svg>

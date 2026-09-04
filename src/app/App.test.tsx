@@ -86,6 +86,65 @@ it('provides Persian empty state and accessible toolbar controls', () => {
   expect(screen.queryByRole('button', { name: /فهرست مطالب/ })).not.toBeInTheDocument();
 });
 
+it('opens a browser file locally and restores it after remounting', async () => {
+  delete (window as Partial<Window>).electronAPI;
+  const user = userEvent.setup();
+  const { unmount } = render(<App />);
+  await user.upload(
+    screen.getByLabelText('انتخاب فایل متنی'),
+    new File(['# یادداشت من\n\nHello'], 'note.md', { type: 'text/markdown' }),
+  );
+  expect(await screen.findByRole('heading', { name: 'یادداشت من' })).toBeInTheDocument();
+  unmount();
+  render(<App />);
+  expect(screen.getByRole('heading', { name: 'یادداشت من' })).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'بستن و پاک کردن سند ذخیره‌شده' }));
+  expect(screen.queryByRole('heading', { name: 'یادداشت من' })).not.toBeInTheDocument();
+});
+
+it('rejects unsupported dropped files and retains the current document', async () => {
+  delete (window as Partial<Window>).electronAPI;
+  const user = userEvent.setup();
+  render(<App />);
+  await user.click(screen.getByRole('button', { name: 'مشاهدهٔ نمونه' }));
+  const article = screen.getByRole('article');
+  fireEvent.drop(screen.getByRole('main'), {
+    dataTransfer: { files: [new File(['binary'], 'app.exe')] },
+  });
+  expect(await screen.findByRole('alert')).toHaveTextContent('فایل متنی');
+  expect(article).toBeInTheDocument();
+});
+
+it('persists reading size, enforces bounds and resets preferences', async () => {
+  installApi();
+  const user = userEvent.setup();
+  const { unmount } = render(<App />);
+  await user.click(screen.getByRole('button', { name: 'مشاهدهٔ نمونه' }));
+  for (let index = 0; index < 20; index++)
+    await user.click(screen.getByRole('button', { name: 'بزرگ کردن متن' }));
+  expect(screen.getByRole('button', { name: 'بزرگ کردن متن' })).toBeDisabled();
+  expect(screen.getByRole('group', { name: 'اندازهٔ متن' })).toHaveTextContent('28');
+  unmount();
+  render(<App />);
+  await user.click(screen.getByRole('button', { name: 'مشاهدهٔ نمونه' }));
+  expect(screen.getByRole('group', { name: 'اندازهٔ متن' })).toHaveTextContent('28');
+  await user.click(screen.getByRole('button', { name: 'بازنشانی تنظیمات خواندن' }));
+  expect(screen.getByRole('group', { name: 'اندازهٔ متن' })).toHaveTextContent('18');
+  expect(screen.getByRole('button', { name: 'بزرگ کردن متن' })).toBeEnabled();
+});
+
+it('exits focus mode with Escape and restores the outline', async () => {
+  const api = installApi();
+  const user = userEvent.setup();
+  render(<App />);
+  api.opened(payload('Focus'));
+  await user.click(screen.getByRole('button', { name: 'حالت تمرکز' }));
+  expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'خروج از تمرکز' })).toBeVisible();
+  await user.keyboard('{Escape}');
+  expect(screen.getByRole('navigation')).toBeInTheDocument();
+});
+
 it('keeps the most recent selection when requests resolve out of order', async () => {
   const user = userEvent.setup();
   const api = installApi();
@@ -104,7 +163,7 @@ it('keeps the most recent selection when requests resolve out of order', async (
     first.resolve(payload('First'));
   });
   expect(screen.queryByRole('heading', { name: 'First' })).not.toBeInTheDocument();
-  expect(screen.getByText('Second.md')).toBeInTheDocument();
+  expect(screen.getByRole('article', { name: 'Second.md' })).toBeInTheDocument();
 });
 
 it('does not replace an OS-opened file with an older dialog result or error', async () => {
@@ -184,6 +243,64 @@ it('keeps theme switching usable when local storage is unavailable', async () =>
   });
   render(<App />);
   await user.click(screen.getByRole('button', { name: 'فعال کردن حالت تیره' }));
+  expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
+});
+
+it('restores ebook mode after remounting and returns to the previous dark theme', async () => {
+  installApi();
+  const user = userEvent.setup();
+  localStorage.setItem('md-viewer-dark', 'true');
+  const { unmount } = render(<App />);
+  await user.click(screen.getByRole('button', { name: 'حالت کتابخوان' }));
+  expect(document.documentElement).toHaveAttribute('data-theme', 'ebook-reader');
+  expect(document.documentElement).not.toHaveClass('dark');
+  expect(screen.getByRole('button', { name: 'حالت کتابخوان' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  unmount();
+  render(<App />);
+  expect(document.documentElement).toHaveAttribute('data-theme', 'ebook-reader');
+  await user.click(screen.getByRole('button', { name: 'حالت کتابخوان' }));
+  expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
+});
+
+it('preserves the document and reading settings while switching into ebook mode and back', async () => {
+  const api = installApi();
+  const user = userEvent.setup();
+  render(<App />);
+  api.opened(payload('Reading'));
+  await user.click(screen.getByRole('button', { name: 'بزرگ کردن متن' }));
+  await user.selectOptions(screen.getByLabelText('فاصلهٔ خطوط'), '2.2');
+  await user.click(screen.getByRole('button', { name: 'حالت کتابخوان' }));
+  expect(screen.getByRole('article', { name: 'Reading.md' })).toBeInTheDocument();
+  expect(screen.getByRole('group', { name: 'اندازهٔ متن' })).toHaveTextContent('19');
+  expect(screen.getByLabelText('فاصلهٔ خطوط')).toHaveValue('2.2');
+  await user.click(screen.getByRole('button', { name: 'حالت کتابخوان' }));
+  expect(document.documentElement).toHaveAttribute('data-theme', 'light');
+  await user.click(screen.getByRole('button', { name: 'حالت کتابخوان' }));
+  await user.click(screen.getByRole('button', { name: 'فعال کردن حالت تیره' }));
+  expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
+  expect(screen.getByRole('button', { name: 'حالت کتابخوان' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  );
+});
+
+it('returns from ebook to the previous theme even when storage is blocked', async () => {
+  installApi();
+  const user = userEvent.setup();
+  vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+    throw new Error('denied');
+  });
+  vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    throw new Error('denied');
+  });
+  render(<App />);
+  await user.click(screen.getByRole('button', { name: 'فعال کردن حالت تیره' }));
+  await user.click(screen.getByRole('button', { name: 'حالت کتابخوان' }));
+  expect(document.documentElement).toHaveAttribute('data-theme', 'ebook-reader');
+  await user.click(screen.getByRole('button', { name: 'حالت کتابخوان' }));
   expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
 });
 

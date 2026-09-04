@@ -33,39 +33,50 @@
 
 :root[data-theme='dark'] .markdown-body {
   color-scheme: dark;
-  --focus-outlineColor: #4493f8;
-  --fgColor-default: #f0f6fc;
-  --fgColor-muted: #9198a1;
-  --fgColor-accent: #4493f8;
-  --fgColor-success: #3fb950;
-  --fgColor-attention: #d29922;
-  --fgColor-danger: #f85149;
-  --fgColor-done: #ab7df8;
-  --bgColor-default: #0d1117;
-  --bgColor-muted: #151b23;
-  --bgColor-neutral-muted: #656c7633;
-  --bgColor-attention-muted: #bb800926;
-  --borderColor-default: #3d444d;
-  --borderColor-muted: #3d444db3;
-  --borderColor-neutral-muted: #3d444db3;
-  --borderColor-accent-emphasis: #1f6feb;
-  --borderColor-success-emphasis: #238636;
-  --borderColor-attention-emphasis: #9e6a03;
-  --borderColor-danger-emphasis: #da3633;
-  --borderColor-done-emphasis: #8957e5;
-  --syntax-comment: #9198a1;
-  --syntax-keyword: #ff7b72;
-  --syntax-string: #a5d6ff;
-  --syntax-number: #79c0ff;
-  --syntax-title: #d2a8ff;
-  --syntax-variable: #ffa657;
+  --focus-outlineColor: var(--accent);
+  --fgColor-default: var(--ink);
+  --fgColor-muted: var(--muted);
+  --fgColor-accent: var(--accent);
+  --fgColor-success: var(--success);
+  --fgColor-attention: var(--attention);
+  --fgColor-danger: var(--danger);
+  --fgColor-done: var(--done);
+  --bgColor-default: var(--surface);
+  --bgColor-muted: var(--surface-muted);
+  --bgColor-neutral-muted: var(--surface-muted);
+  --bgColor-attention-muted: oklch(34% 0.035 85);
+  --borderColor-default: var(--border);
+  --borderColor-muted: var(--border);
+  --borderColor-neutral-muted: var(--border);
+  --borderColor-accent-emphasis: var(--accent);
+  --borderColor-success-emphasis: var(--success);
+  --borderColor-attention-emphasis: var(--attention);
+  --borderColor-danger-emphasis: var(--danger);
+  --borderColor-done-emphasis: var(--done);
+  --syntax-comment: var(--muted);
+  --syntax-keyword: oklch(77.03% 0.0991 22.67);
+  --syntax-string: oklch(81.05% 0.0574 159.31);
+  --syntax-number: oklch(78.38% 0.0661 239.63);
+  --syntax-title: var(--done);
+  --syntax-variable: oklch(81.85% 0.0753 71.08);
+}
+
+:root[data-theme='dark'] ::selection {
+  color: var(--heading);
+  background: var(--selection);
+}
+
+:root[data-theme='dark'] .markdown-body :is(h1, h2, h3, h4, h5, h6) {
+  color: var(--heading);
+}
+
+:root[data-theme='dark'] .markdown-body pre {
+  background: var(--code-surface);
 }
 
 .markdown-body {
   min-width: 0;
-  padding: 32px;
-  border: 1px solid var(--borderColor-default);
-  border-radius: 6px;
+  padding: 36px 40px 48px;
   font-family:
     Vazirmatn,
     -apple-system,
@@ -73,10 +84,11 @@
     'Segoe UI',
     Arial,
     sans-serif;
-  font-size: 16px;
-  line-height: 1.75;
+  font-size: var(--reader-font-size, 18px);
+  line-height: var(--reader-line-height, 1.9);
   text-align: start;
   overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 .markdown-body :is(h1, h2, h3, h4, h5, h6) {
   scroll-margin-top: 24px;
@@ -244,6 +256,5 @@
 @media (max-width: 560px) {
   .markdown-body {
     padding: 20px 16px;
-    font-size: 15px;
   }
 }

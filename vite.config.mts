@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { offlinePlugin } from './scripts/offline-plugin';
 
 export default defineConfig(({ command }) => {
   // React Refresh injects an inline preamble in development only.
@@ -10,6 +11,7 @@ export default defineConfig(({ command }) => {
   return {
     plugins: [
       react(),
+      offlinePlugin(),
       {
         name: 'development-csp',
         apply: 'serve',

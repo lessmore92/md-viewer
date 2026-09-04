@@ -1,0 +1,16 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 100 100"
+  role="img"
+  aria-label="Reading rhythm"
+  color="#0969da"
+>
+  <g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round">
+    <path d="M24 25q14-2 26 8 12-10 26-8" />
+    <path d="M24 34q14-2 26 8 12-10 26-8" />
+    <path d="M24 43q14-2 26 8 12-10 26-8" />
+    <path d="M24 52q14-2 26 8 12-10 26-8" />
+    <path d="M24 61q14-2 26 8 12-10 26-8" />
+    <path d="M24 70q14-2 26 8 12-10 26-8" />
+  </g>
+</svg>

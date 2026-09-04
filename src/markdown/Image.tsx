@@ -24,7 +24,7 @@ export function Image(input: ImageProps) {
     resolvedSource = originalSource;
   } else if (documentId && classifyLink(originalSource) === 'relative') {
     try {
-      resolvedSource = window.electronAPI.assetUrl(documentId, originalSource);
+      resolvedSource = window.electronAPI?.assetUrl(documentId, originalSource) ?? null;
     } catch {
       resolvedSource = null;
     }
