@@ -1,14 +1,14 @@
 # MD Viewer
 
-## Register
+## ثبت محصول
 
-product
+محصول
 
-## Users
+## کاربران
 
-Desktop and mobile browser users, alongside Windows users, reading local Markdown including Persian and mixed Persian/English technical documents.
+کاربران مرورگر دسکتاپ و موبایل، در کنار کاربران Windows، که Markdown محلی از جمله سندهای فنی فارسی و فارسی/انگلیسی را می‌خوانند.
 
-## Product Purpose
+## هدف محصول
 
 یک یا چند سند محلی را ایمن و با قواعد آشنای README گیت‌هاب باز کند و پیمایش ساختار H1–H3 هر سند را مستقل نگه دارد.
 
@@ -22,32 +22,32 @@ Desktop and mobile browser users, alongside Windows users, reading local Markdow
 - وضعیت تب‌ها، تب فعال و Split فقط روی همان دستگاه ذخیره می‌شود و هیچ محتوای سندی به سرور فرستاده نمی‌شود.
 - سندهای بازگردانی‌شده از ابتدای صفحه باز می‌شوند؛ موقعیت پیمایش فقط در نشست جاری حفظ می‌شود.
 
-## Brand Personality
+## شخصیت برند
 
-Familiar, restrained, readable. GitHub README rendering is the explicit visual reference approved by the user.
+آشنا، متین و خوانا. رندر GitHub README مرجع بصری صریحی است که کاربر تأیید کرده است.
 
-## Anti-references
+## موارد پرهیز
 
-Avoid marketing-page decoration, oversized cards, gratuitous animation, and editor controls outside a reading-focused document workspace.
+از تزئینات صفحهٔ بازاریابی، کارت‌های بیش‌ازحد بزرگ، انیمیشن‌های بی‌دلیل و کنترل‌های ویرایشگر خارج از فضای کار سندمحور و مطالعه‌محور پرهیز شود.
 
-## Design Principles
+## اصول طراحی
 
-- Preserve GitHub document semantics and visual familiarity.
-- Keep local documents as data, never privileged application pages.
-- Use the approved centered document with a right-side table of contents.
-- Support Persian and English without sacrificing code readability.
-- Prefer visible error recovery and predictable keyboard behavior.
+- معنای سند و آشنایی بصری GitHub حفظ شود.
+- سندهای محلی داده باقی بمانند و هرگز به صفحه‌های ویژهٔ برنامه تبدیل نشوند.
+- از سند تأییدشدهٔ وسط‌چین با فهرست مطالب سمت راست استفاده شود.
+- از فارسی و انگلیسی بدون قربانی‌کردن خوانایی کد پشتیبانی شود.
+- بازیابی خطا به‌صورت قابل‌مشاهده و رفتار صفحه‌کلید قابل‌پیش‌بینی ترجیح داده شود.
 
-## Accessibility & Inclusion
+## دسترس‌پذیری و شمول
 
-Visible keyboard focus, accessible control names, drawer focus management and Escape dismissal, reduced-motion behavior, readable contrast, and persistent light/dark/ebook-reader themes.
+تمرکز قابل‌مشاهدهٔ صفحه‌کلید، نام‌های دسترس‌پذیر کنترل‌ها، مدیریت تمرکز کشو و بستن آن با Escape، رفتار مناسب برای کاهش حرکت، کنتراست خوانا و ماندگاری تم‌های light/dark/ebook-reader.
 
-## Approved Design
+## طراحی تأییدشده
 
-The authoritative detailed specification is `docs/superpowers/specs/2026-09-01-github-markdown-viewer-design.md`. Existing GitHub colors and Vazirmatn typography take precedence over generic design-skill defaults.
+مشخصات تفصیلی مرجع در `docs/superpowers/specs/2026-09-01-github-markdown-viewer-design.md` قرار دارد. رنگ‌های موجود GitHub و تایپوگرافی Vazirmatn بر پیش‌فرض‌های عمومی مهارت طراحی اولویت دارند.
 
-The September 4 extension is documented in `docs/superpowers/specs/2026-09-04-offline-reader-design.md`: book/M identity, responsive reading toolbar, focus mode and offline browser support.
+گسترش ۴ سپتامبر در `docs/superpowers/specs/2026-09-04-offline-reader-design.md` مستند شده است: هویت book/M، نوار ابزار خواندن واکنش‌گرا، حالت تمرکز و پشتیبانی آفلاین مرورگر.
 
-The user also approved a distinct E-Ink-inspired appearance, documented in `docs/superpowers/specs/2026-09-04-ebook-reader-design.md`: warm gray paper, monochrome content, book-like headings and a reversible appearance toggle. Existing reading preferences remain available in every theme.
+کاربر همچنین ظاهر متمایز الهام‌گرفته از E-Ink را تأیید کرده است که در `docs/superpowers/specs/2026-09-04-ebook-reader-design.md` مستند شده است: کاغذ خاکستری گرم، محتوای تک‌رنگ، عنوان‌های کتاب‌گونه و کلید تغییر ظاهر برگشت‌پذیر. تنظیمات خواندن موجود در همهٔ تم‌ها در دسترس می‌مانند.
 
 رفتار مصوب چندتب و Split در `docs/superpowers/specs/2026-09-04-multi-tab-split-design.md` ثبت شده است.

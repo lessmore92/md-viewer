@@ -161,3 +161,21 @@ For a clean final result, the same built output was served by a separately start
 6. Git in the sandbox requires a command-local `safe.directory` setting and reports that the user's global ignore file is inaccessible. No global Git setting was changed.
 
 No Task 6 regression was found in the checks that could execute normally.
+
+## Follow-up review fixes
+
+The review's two blocking findings were addressed in the follow-up commit:
+
+1. The README offline section now describes the persisted multi-tab workspace and stored documents, including the fact that site-data cleanup can remove that workspace. It no longer describes a “last document” or a singular saved document.
+2. `PRODUCT.md` now uses Persian for all visible headings and prose sections while preserving product names, technical identifiers, paths, and commands such as `GitHub`, `Windows`, `light/dark/ebook-reader`, `E-Ink`, and `npm`.
+
+The report's earlier claim that obsolete last-document wording had been corrected is now accurate for the final docs. No source files were changed.
+
+Follow-up verification:
+
+```powershell
+$env:NODE_OPTIONS='--preserve-symlinks --preserve-symlinks-main'
+node node_modules/prettier/bin/prettier.cjs --check README.md PRODUCT.md .superpowers/sdd/2026-09-04-multi-tab-split/task-6-report.md
+```
+
+Exit 0: `All matched files use Prettier code style!`
