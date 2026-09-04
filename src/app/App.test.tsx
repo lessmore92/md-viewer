@@ -5,6 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { DocumentPayload } from '../../electron/contracts';
 import { installDialog, installMedia } from '../test/browser';
 import App from './App';
+import { restoreTabsStorageKey, workspaceStorageKey } from './workspace';
 
 function payload(
   name: string,
@@ -108,7 +109,7 @@ it('rejects unsupported dropped files and retains the current document', async (
   render(<App />);
   await user.click(screen.getByRole('button', { name: 'مشاهدهٔ نمونه' }));
   const article = screen.getByRole('article');
-  fireEvent.drop(screen.getByRole('main'), {
+  fireEvent.drop(screen.getByRole('region', { name: 'محتوای سند' }), {
     dataTransfer: { files: [new File(['binary'], 'app.exe')] },
   });
   expect(await screen.findByRole('alert')).toHaveTextContent('فایل متنی');
@@ -126,7 +127,7 @@ it('persists reading size, enforces bounds and resets preferences', async () => 
   expect(screen.getByRole('group', { name: 'اندازهٔ متن' })).toHaveTextContent('28');
   unmount();
   render(<App />);
-  await user.click(screen.getByRole('button', { name: 'مشاهدهٔ نمونه' }));
+  expect(screen.getByRole('article', { name: 'خوش‌آمدید.md' })).toBeInTheDocument();
   expect(screen.getByRole('group', { name: 'اندازهٔ متن' })).toHaveTextContent('28');
   await user.click(screen.getByRole('button', { name: 'بازنشانی تنظیمات خواندن' }));
   expect(screen.getByRole('group', { name: 'اندازهٔ متن' })).toHaveTextContent('18');
@@ -145,7 +146,7 @@ it('exits focus mode with Escape and restores the outline', async () => {
   expect(screen.getByRole('navigation')).toBeInTheDocument();
 });
 
-it('keeps the most recent selection when requests resolve out of order', async () => {
+it('keeps every successful selection when requests resolve out of order', async () => {
   const user = userEvent.setup();
   const api = installApi();
   const first = deferred<DocumentPayload | null>();
@@ -162,11 +163,13 @@ it('keeps the most recent selection when requests resolve out of order', async (
   await act(async () => {
     first.resolve(payload('First'));
   });
-  expect(screen.queryByRole('heading', { name: 'First' })).not.toBeInTheDocument();
+  expect(screen.getAllByRole('tab')).toHaveLength(2);
+  expect(screen.getByRole('article', { name: 'First.md' })).toBeInTheDocument();
+  await user.click(screen.getByRole('tab', { name: 'Second.md' }));
   expect(screen.getByRole('article', { name: 'Second.md' })).toBeInTheDocument();
 });
 
-it('does not replace an OS-opened file with an older dialog result or error', async () => {
+it('does not show an older dialog error after an OS-opened file', async () => {
   const user = userEvent.setup();
   const api = installApi();
   const request = deferred<DocumentPayload | null>();
@@ -366,7 +369,7 @@ it('tracks geometry rather than only the latest observer batch, including upward
   act(() => observers[observers.length - 1].callback([], {} as IntersectionObserver));
   expect(screen.getByRole('link', { name: 'Install' })).toHaveAttribute('aria-current', 'location');
   positions.splice(0, 3, -600, 250, 900);
-  fireEvent.scroll(screen.getByRole('main'));
+  fireEvent.scroll(screen.getByRole('region', { name: 'محتوای سند' }));
   await vi.waitFor(() =>
     expect(screen.getByRole('link', { name: 'Guide' })).toHaveAttribute('aria-current', 'location'),
   );
@@ -391,7 +394,7 @@ it('marks the final section at the bottom even if that heading cannot reach the 
   const api = installApi();
   render(<App />);
   api.opened(payload('Guide'));
-  const root = screen.getByRole('main');
+  const root = screen.getByRole('region', { name: 'محتوای سند' });
   Object.defineProperties(root, {
     scrollHeight: { value: 1800, configurable: true },
     clientHeight: { value: 800, configurable: true },
@@ -416,9 +419,217 @@ it('cancels a pending scroll frame even when an observer notification arrives be
   const api = installApi();
   const { unmount } = render(<App />);
   api.opened(payload('Guide'));
-  fireEvent.scroll(screen.getByRole('main'));
+  fireEvent.scroll(screen.getByRole('region', { name: 'محتوای سند' }));
   expect(frames.size).toBe(1);
   act(() => observers[observers.length - 1].callback([], {} as IntersectionObserver));
   unmount();
   expect(frames.size).toBe(0);
+});
+
+it('opens multiple documents as tabs and refreshes a duplicate in place', async () => {
+  const api = installApi();
+  const user = userEvent.setup();
+  render(<App />);
+  api.opened(payload('First'));
+  expect(screen.getByRole('button', { name: 'فعال کردن split' })).toBeDisabled();
+  api.opened(payload('Second'));
+  expect(screen.getAllByRole('tab')).toHaveLength(2);
+  api.opened({ ...payload('First', '# Updated'), documentId: 'fresh-render-id' });
+  expect(screen.getAllByRole('tab')).toHaveLength(2);
+  expect(screen.getByRole('tab', { name: 'First.md' })).toHaveAttribute('aria-selected', 'true');
+  expect(screen.getByRole('heading', { name: 'Updated' })).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'فعال کردن split' }));
+  await user.selectOptions(
+    screen.getByLabelText('سند پنل دوم'),
+    screen.getByRole('option', { name: 'Second.md' }),
+  );
+  expect(screen.getAllByRole('article')).toHaveLength(2);
+  expect(screen.getAllByRole('main')).toHaveLength(1);
+});
+
+it('closes inactive and active tabs, selects the nearest tab, and returns to the empty state', async () => {
+  const api = installApi();
+  const user = userEvent.setup();
+  render(<App />);
+  for (const name of ['First', 'Second', 'Third', 'Fourth']) api.opened(payload(name));
+  await user.click(screen.getByRole('button', { name: 'بستن First.md' }));
+  expect(screen.getByRole('tab', { name: 'Fourth.md' })).toHaveAttribute('aria-selected', 'true');
+  await user.click(screen.getByRole('tab', { name: 'Third.md' }));
+  await user.click(screen.getByRole('button', { name: 'بستن Third.md' }));
+  expect(screen.getByRole('tab', { name: 'Second.md' })).toHaveAttribute('aria-selected', 'true');
+  await user.click(screen.getByRole('button', { name: 'بستن Second.md' }));
+  expect(screen.getByRole('article', { name: 'Fourth.md' })).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'بستن Fourth.md' }));
+  expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+  expect(
+    screen.getByRole('heading', { name: 'فایل Markdown خود را باز کنید' }),
+  ).toBeInTheDocument();
+  expect(JSON.parse(localStorage.getItem(workspaceStorageKey)!).tabs).toEqual([]);
+});
+
+it('clears split when its tab becomes active or closes and allows choosing a different second pane', async () => {
+  const api = installApi();
+  const user = userEvent.setup();
+  render(<App />);
+  for (const name of ['First', 'Second', 'Third']) api.opened(payload(name));
+  await user.click(screen.getByRole('button', { name: 'فعال کردن split' }));
+  await user.selectOptions(
+    screen.getByLabelText('سند پنل دوم'),
+    screen.getByRole('option', { name: 'Second.md' }),
+  );
+  expect(screen.getByRole('article', { name: 'Second.md' })).toBeInTheDocument();
+  await user.click(screen.getByRole('tab', { name: 'Second.md' }));
+  expect(screen.getAllByRole('article')).toHaveLength(1);
+  await user.click(screen.getByRole('button', { name: 'فعال کردن split' }));
+  await user.click(screen.getByRole('button', { name: 'بستن First.md' }));
+  expect(screen.getAllByRole('article')).toHaveLength(1);
+  await user.click(screen.getByRole('button', { name: 'فعال کردن split' }));
+  await user.click(screen.getByRole('button', { name: 'بستن split' }));
+  expect(screen.getAllByRole('tab')).toHaveLength(2);
+  expect(screen.getAllByRole('article')).toHaveLength(1);
+});
+
+it('persists tabs, activation and split in Electron and clears split on narrow resize and startup', async () => {
+  const resize = installMedia();
+  const api = installApi();
+  const user = userEvent.setup();
+  const first = render(<App />);
+  api.opened(payload('First'));
+  api.opened(payload('Second'));
+  await user.click(screen.getByRole('tab', { name: 'First.md' }));
+  await user.click(screen.getByRole('button', { name: 'فعال کردن split' }));
+  first.unmount();
+  const second = render(<App />);
+  expect(screen.getAllByRole('article')).toHaveLength(2);
+  expect(screen.getByRole('tab', { name: 'First.md' })).toHaveAttribute('aria-selected', 'true');
+  act(() => resize(true));
+  expect(screen.getAllByRole('article')).toHaveLength(1);
+  expect(JSON.parse(localStorage.getItem(workspaceStorageKey)!).splitTabId).toBeNull();
+  act(() => resize(false));
+  expect(screen.getAllByRole('article')).toHaveLength(1);
+  await user.click(screen.getByRole('button', { name: 'فعال کردن split' }));
+  second.unmount();
+  installMedia({ narrow: true });
+  render(<App />);
+  expect(screen.getAllByRole('tab')).toHaveLength(2);
+  expect(screen.getAllByRole('article')).toHaveLength(1);
+  expect(screen.queryByRole('button', { name: /split/ })).not.toBeInTheDocument();
+  expect(JSON.parse(localStorage.getItem(workspaceStorageKey)!).splitTabId).toBeNull();
+});
+
+it('turns restoration off by keyboard without closing current tabs and allows re-enabling it', async () => {
+  const api = installApi();
+  const user = userEvent.setup();
+  const first = render(<App />);
+  api.opened(payload('First'));
+  api.opened(payload('Second'));
+  const setting = screen.getByRole('checkbox', { name: 'بازگردانی تب‌ها هنگام شروع' });
+  expect(setting).toBeChecked();
+  setting.focus();
+  await user.keyboard(' ');
+  expect(setting).not.toBeChecked();
+  expect(localStorage.getItem(restoreTabsStorageKey)).toBe('false');
+  expect(screen.getAllByRole('tab')).toHaveLength(2);
+  first.unmount();
+  const second = render(<App />);
+  expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'مشاهدهٔ نمونه' }));
+  expect(screen.getByRole('checkbox', { name: 'بازگردانی تب‌ها هنگام شروع' })).not.toBeChecked();
+  await user.click(screen.getByRole('checkbox', { name: 'بازگردانی تب‌ها هنگام شروع' }));
+  second.unmount();
+  render(<App />);
+  expect(screen.getByRole('article', { name: 'خوش‌آمدید.md' })).toBeInTheDocument();
+});
+
+it('keeps browser uploads and drops as tabs, reuses duplicate content and closes only the active tab', async () => {
+  delete (window as Partial<Window>).electronAPI;
+  const user = userEvent.setup();
+  render(<App />);
+  const file = () => new File(['# Browser'], 'note.md', { type: 'text/markdown' });
+  await user.upload(screen.getByLabelText('انتخاب فایل متنی'), file());
+  fireEvent.drop(screen.getByRole('region', { name: 'محتوای سند' }), {
+    dataTransfer: { files: [new File(['# Dropped'], 'drop.md')] },
+  });
+  expect(await screen.findByRole('heading', { name: 'Dropped' })).toBeInTheDocument();
+  await user.upload(screen.getByLabelText('انتخاب فایل متنی'), file());
+  expect(screen.getAllByRole('tab')).toHaveLength(2);
+  expect(screen.getByRole('tab', { name: 'note.md' })).toHaveAttribute('aria-selected', 'true');
+  await user.click(screen.getByRole('button', { name: 'بستن و پاک کردن سند ذخیره‌شده' }));
+  expect(screen.getByRole('article', { name: 'drop.md' })).toBeInTheDocument();
+  expect(screen.getAllByRole('tab')).toHaveLength(1);
+});
+
+it('retains a pending successful dialog after an OS open and ignores results after unmount', async () => {
+  const api = installApi();
+  const user = userEvent.setup();
+  const request = deferred<DocumentPayload | null>();
+  const abandoned = deferred<DocumentPayload | null>();
+  api.selectDocument.mockReturnValueOnce(request.promise).mockReturnValueOnce(abandoned.promise);
+  const view = render(<App />);
+  await user.click(screen.getByRole('button', { name: 'باز کردن فایل' }));
+  api.opened(payload('OS'));
+  await act(async () => request.resolve(payload('Dialog')));
+  expect(screen.getAllByRole('tab')).toHaveLength(2);
+  await user.click(screen.getByRole('button', { name: 'باز کردن فایل' }));
+  view.unmount();
+  await act(async () => abandoned.resolve(payload('Abandoned')));
+  render(<App />);
+  expect(screen.getAllByRole('tab')).toHaveLength(2);
+  expect(screen.queryByRole('tab', { name: 'Abandoned.md' })).not.toBeInTheDocument();
+});
+
+it('retains independent scroll positions and scoped navigation across tabs and split panes', async () => {
+  const api = installApi();
+  const user = userEvent.setup();
+  render(<App />);
+  api.opened(payload('First'));
+  const primary = screen.getByRole('region', { name: 'محتوای سند' });
+  fireEvent.scroll(primary, { target: { scrollTop: 240 } });
+  api.opened(payload('Second'));
+  await vi.waitFor(() => expect(primary.scrollTop).toBe(0));
+  fireEvent.scroll(primary, { target: { scrollTop: 580 } });
+  await user.click(screen.getByRole('tab', { name: 'First.md' }));
+  await vi.waitFor(() => expect(primary.scrollTop).toBe(240));
+  await user.click(screen.getByRole('button', { name: 'فعال کردن split' }));
+  const secondary = screen.getAllByRole('region', { name: 'محتوای سند' })[1];
+  await vi.waitFor(() => expect(secondary.scrollTop).toBe(580));
+  const primaryScroll = vi.fn();
+  const secondaryScroll = vi.fn();
+  Object.defineProperty(
+    within(primary).getByRole('heading', { name: 'Install' }),
+    'scrollIntoView',
+    { value: primaryScroll },
+  );
+  Object.defineProperty(
+    within(secondary).getByRole('heading', { name: 'Install' }),
+    'scrollIntoView',
+    { value: secondaryScroll },
+  );
+  await user.click(within(secondary).getByRole('link', { name: 'Install' }));
+  expect(secondaryScroll).toHaveBeenCalledOnce();
+  expect(primaryScroll).not.toHaveBeenCalled();
+  expect(primary.scrollTop).toBe(240);
+  fireEvent.scroll(secondary, { target: { scrollTop: 720 } });
+  await user.click(screen.getByRole('button', { name: 'بستن split' }));
+  await user.click(screen.getByRole('tab', { name: 'Second.md' }));
+  await vi.waitFor(() => expect(primary.scrollTop).toBe(720));
+});
+
+it('keeps workspace and restore settings usable when storage fails and clears the notice after recovery', async () => {
+  const api = installApi();
+  const user = userEvent.setup();
+  render(<App />);
+  api.opened(payload('First'));
+  const storage = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    throw new Error('quota');
+  });
+  api.opened(payload('Second'));
+  expect(screen.getByRole('alert')).toHaveTextContent('تب');
+  await user.click(screen.getByRole('checkbox', { name: 'بازگردانی تب‌ها هنگام شروع' }));
+  expect(screen.getAllByRole('tab')).toHaveLength(2);
+  expect(screen.getByRole('checkbox', { name: 'بازگردانی تب‌ها هنگام شروع' })).not.toBeChecked();
+  storage.mockRestore();
+  await user.click(screen.getByRole('tab', { name: 'First.md' }));
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(localStorage.getItem(restoreTabsStorageKey)).toBe('false');
 });

@@ -1,19 +1,25 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { DocumentPayload } from '../../electron/contracts';
 import { DocumentPane } from '../components/DocumentPane';
-import type { WorkspaceTab } from './workspace';
+import { TabBar } from '../components/TabBar';
+import {
+  activateTab,
+  closeTab,
+  createWorkspace,
+  openInWorkspace,
+  readWorkspace,
+  saveRestoreTabs,
+  saveWorkspace,
+  setSplitTab,
+} from './workspace';
+import type { WorkspaceState } from './workspace';
 import { Toolbar } from '../components/Toolbar';
 import { ReadingToolbar } from '../components/ReadingToolbar';
 import { Icon } from '../components/Icon';
 import { applyTheme, readTheme, readStandardTheme, saveTheme } from './theme';
 import type { Theme, StandardTheme } from './theme';
-import {
-  acceptedFiles,
-  readBrowserFile,
-  restoreBrowserDocument,
-  saveBrowserDocument,
-} from './browserDocument';
+import { acceptedFiles, readBrowserFile } from './browserDocument';
 import { defaultPreferences, readPreferences, savePreferences } from './readingPreferences';
 import type { ReadingPreferences } from './readingPreferences';
 import { useOffline } from './useOffline';
@@ -21,10 +27,29 @@ import sample from './sample.md?raw';
 
 const narrowQuery = '(max-width: 960px)';
 
+function initialWorkspace(): WorkspaceState {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return createWorkspace();
+    const saved = readWorkspace();
+    if (!saved.restoreTabs) return createWorkspace(false);
+    return window.matchMedia?.(narrowQuery).matches ? setSplitTab(saved, null) : saved;
+  } catch {
+    return createWorkspace();
+  }
+}
+
+const paneStyle: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  minHeight: 0,
+  minWidth: 0,
+};
+
 export default function App() {
-  const [doc, setDoc] = useState<DocumentPayload | null>(() =>
-    window.electronAPI ? null : restoreBrowserDocument(),
-  );
+  const [workspace, setWorkspace] = useState(initialWorkspace);
+  const primaryTab = workspace.tabs.find((tab) => tab.tabId === workspace.activeTabId) ?? null;
+  const secondaryTab = workspace.tabs.find((tab) => tab.tabId === workspace.splitTabId) ?? null;
+  const doc = primaryTab?.document;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [storageError, setStorageError] = useState(false);
@@ -42,30 +67,40 @@ export default function App() {
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
   const [narrow, setNarrow] = useState(() => window.matchMedia?.(narrowQuery).matches ?? false);
   const latestRequest = useRef(0);
+  const pendingRequests = useRef(new Set<number>());
+  const lastPersistedWorkspace = useRef<WorkspaceState | null>(null);
   const outlineId = useId();
   const [hasHeadings, setHasHeadings] = useState(false);
-  const [scrollTop, setScrollTop] = useState(0);
-  const tab = useMemo<WorkspaceTab | null>(
-    () =>
-      doc
-        ? {
-            tabId: doc.documentId,
-            document: doc,
-            documentKey: doc.documentId,
-            scrollTop,
-          }
-        : null,
-    [doc, scrollTop],
-  );
 
   const acceptDocument = useCallback((next: DocumentPayload) => {
-    setDoc(next);
+    // A success supersedes old errors, but other pending successes still become tabs.
+    ++latestRequest.current;
+    setWorkspace((current) => openInWorkspace(current, next));
     setError('');
-    if (!window.electronAPI) setStorageError(!saveBrowserDocument(next));
-    setLoading(false);
     setDrawerOpen(false);
-    setScrollTop(0);
   }, []);
+
+  useEffect(() => {
+    const previous = lastPersistedWorkspace.current;
+    // Scroll offsets are session-only; avoid rewriting document content on every scroll.
+    if (
+      previous &&
+      previous.activeTabId === workspace.activeTabId &&
+      previous.splitTabId === workspace.splitTabId &&
+      previous.restoreTabs === workspace.restoreTabs &&
+      previous.tabs.length === workspace.tabs.length &&
+      previous.tabs.every(
+        (tab, index) =>
+          tab.tabId === workspace.tabs[index].tabId &&
+          tab.document === workspace.tabs[index].document,
+      )
+    )
+      return;
+    lastPersistedWorkspace.current = workspace;
+    const savedWorkspace = saveWorkspace(workspace);
+    const savedPreference = saveRestoreTabs(workspace.restoreTabs);
+    setStorageError(!savedWorkspace || !savedPreference);
+  }, [workspace]);
 
   const changePreferences = (patch: Partial<ReadingPreferences>) => {
     const next = { ...preferences, ...patch };
@@ -102,15 +137,10 @@ export default function App() {
   }, [focus, exitFocus]);
 
   useEffect(() => {
-    const invalidateRequests = () => {
-      ++latestRequest.current;
-    };
-    const unsubscribe = window.electronAPI?.onDocumentOpened((next) => {
-      invalidateRequests();
-      acceptDocument(next);
-    });
+    const pending = pendingRequests.current;
+    const unsubscribe = window.electronAPI?.onDocumentOpened(acceptDocument);
     return () => {
-      invalidateRequests();
+      pending.clear();
       unsubscribe?.();
     };
   }, [acceptDocument]);
@@ -121,6 +151,7 @@ export default function App() {
     const update = () => {
       setNarrow(media.matches);
       setDrawerOpen(false);
+      if (media.matches) setWorkspace((current) => setSplitTab(current, null));
     };
     media.addEventListener('change', update);
     return () => media.removeEventListener('change', update);
@@ -131,44 +162,46 @@ export default function App() {
     saveTheme(theme);
   }, [theme]);
 
-  const openDocument = async () => {
-    if (!window.electronAPI) {
+  const runOpen = async (
+    operation: () => Promise<DocumentPayload | null>,
+    errorMessage: (reason: unknown) => string,
+  ) => {
+    const request = ++latestRequest.current;
+    pendingRequests.current.add(request);
+    setLoading(true);
+    setError('');
+    try {
+      const next = await operation();
+      if (pendingRequests.current.has(request) && next) acceptDocument(next);
+    } catch (reason) {
+      if (pendingRequests.current.has(request) && request === latestRequest.current)
+        setError(errorMessage(reason));
+    } finally {
+      if (pendingRequests.current.delete(request)) setLoading(pendingRequests.current.size > 0);
+    }
+  };
+
+  const openDocument = () => {
+    const api = window.electronAPI;
+    if (!api) {
       fileInput.current?.click();
       return;
     }
-    const request = ++latestRequest.current;
-    setLoading(true);
-    setError('');
-    try {
-      const next = await window.electronAPI.selectDocument();
-      if (request !== latestRequest.current) return;
-      if (next) acceptDocument(next);
-    } catch {
-      if (request === latestRequest.current)
-        setError('ممکن است فایل حذف شده باشد یا اجازهٔ خواندن آن را نداشته باشید.');
-    } finally {
-      if (request === latestRequest.current) setLoading(false);
-    }
+    return runOpen(
+      () => api.selectDocument(),
+      () => 'ممکن است فایل حذف شده باشد یا اجازهٔ خواندن آن را نداشته باشید.',
+    );
   };
 
-  const openBrowserFile = async (file?: File) => {
+  const openBrowserFile = (file?: File) => {
     if (!file) return;
-    const request = ++latestRequest.current;
-    setLoading(true);
-    setError('');
-    try {
-      const next = await readBrowserFile(file);
-      if (request === latestRequest.current) acceptDocument(next);
-    } catch (reason) {
-      if (request === latestRequest.current)
-        setError(reason instanceof Error ? reason.message : 'خواندن فایل ممکن نشد.');
-    } finally {
-      if (request === latestRequest.current) setLoading(false);
-    }
+    return runOpen(
+      () => readBrowserFile(file),
+      (reason) => (reason instanceof Error ? reason.message : 'خواندن فایل ممکن نشد.'),
+    );
   };
 
   const openSample = () => {
-    ++latestRequest.current;
     acceptDocument({
       content: sample,
       documentId: 'sample',
@@ -177,14 +210,46 @@ export default function App() {
     });
   };
 
-  const closeDocument = () => {
+  const closeWorkspaceTab = (tabId: string) => {
     ++latestRequest.current;
-    setDoc(null);
+    if (tabId === workspace.activeTabId) {
+      pendingRequests.current.clear();
+      setLoading(false);
+    }
+    setWorkspace((current) => closeTab(current, tabId));
     setError('');
-    setLoading(false);
     setFocus(false);
     setDrawerOpen(false);
-    setStorageError(!saveBrowserDocument(null));
+  };
+
+  const closeDocument = () => {
+    if (primaryTab) closeWorkspaceTab(primaryTab.tabId);
+  };
+
+  const activateWorkspaceTab = (tabId: string) => {
+    setWorkspace((current) => activateTab(current, tabId));
+    setDrawerOpen(false);
+  };
+
+  const toggleSplit = () => {
+    if (narrow || workspace.tabs.length < 2) return;
+    setWorkspace((current) =>
+      setSplitTab(
+        current,
+        current.splitTabId
+          ? null
+          : (current.tabs.find((tab) => tab.tabId !== current.activeTabId)?.tabId ?? null),
+      ),
+    );
+  };
+
+  const updateScrollTop = (tabId: string, scrollTop: number) => {
+    setWorkspace((current) => ({
+      ...current,
+      tabs: current.tabs.map((tab) =>
+        tab.tabId === tabId && tab.scrollTop !== scrollTop ? { ...tab, scrollTop } : tab,
+      ),
+    }));
   };
 
   const showSidebar = hasHeadings && !narrow && sidebarVisible && !focus;
@@ -255,6 +320,10 @@ export default function App() {
         <div ref={focusTrigger}>
           <ReadingToolbar
             preferences={preferences}
+            restoreTabs={workspace.restoreTabs}
+            onRestoreTabsChange={(restoreTabs) =>
+              setWorkspace((current) => ({ ...current, restoreTabs }))
+            }
             onChange={changePreferences}
             onReset={() => changePreferences(defaultPreferences)}
             onFocus={() => {
@@ -264,26 +333,81 @@ export default function App() {
           />
         </div>
       ) : null}
-      <DocumentPane
-        tab={tab}
-        paneId="primary"
-        showSidebar={showSidebar}
-        loading={loading}
-        error={error}
-        onNavigate={closeDrawer}
-        onClose={closeDocument}
-        onScrollTop={setScrollTop}
-        outlineId={outlineId}
-        narrow={narrow}
-        drawerOpen={drawerOpen}
-        onCloseDrawer={closeDrawer}
-        onHeadingsChange={setHasHeadings}
-        onOpen={() => void openDocument()}
-        onOpenSample={openSample}
-        onDropFile={(file) => void openBrowserFile(file)}
-        storageError={storageError}
-        offlineLabel={offline.label}
-      />
+      {workspace.tabs.length > 0 && !focus ? (
+        <div className="workspace-tabs">
+          <TabBar
+            tabs={workspace.tabs}
+            activeTabId={workspace.activeTabId}
+            splitTabId={workspace.splitTabId}
+            narrow={narrow || workspace.tabs.length < 2}
+            onActivate={activateWorkspaceTab}
+            onClose={closeWorkspaceTab}
+            onToggleSplit={toggleSplit}
+            onSelectSplit={(tabId) => setWorkspace((current) => setSplitTab(current, tabId))}
+          />
+          {!narrow && workspace.tabs.length < 2 ? (
+            <button className="button button-quiet" type="button" disabled aria-pressed={false}>
+              <Icon name="focus" />
+              فعال کردن split
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+      {storageError ? (
+        <p className="storage-notice" role="alert">
+          ذخیرهٔ تب‌ها یا تنظیمات بازگردانی روی این دستگاه ممکن نشد. تغییرات این نشست ممکن است بعد
+          از بستن صفحه حفظ نشوند.
+        </p>
+      ) : null}
+      <div
+        className={`workspace-panes${secondaryTab && !narrow ? ' is-split' : ''}`}
+        style={{
+          display: 'grid',
+          flex: 1,
+          minHeight: 0,
+          gridTemplateColumns:
+            secondaryTab && !narrow ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
+        }}
+      >
+        <div className="document-pane" style={paneStyle}>
+          <DocumentPane
+            tab={primaryTab}
+            paneId="primary"
+            showSidebar={showSidebar}
+            loading={loading}
+            error={error}
+            onNavigate={closeDrawer}
+            onClose={closeDocument}
+            onScrollTop={(value) => {
+              if (primaryTab) updateScrollTop(primaryTab.tabId, value);
+            }}
+            outlineId={outlineId}
+            narrow={narrow}
+            drawerOpen={drawerOpen}
+            onCloseDrawer={closeDrawer}
+            onHeadingsChange={setHasHeadings}
+            onOpen={() => void openDocument()}
+            onOpenSample={openSample}
+            onDropFile={(file) => void openBrowserFile(file)}
+            offlineLabel={offline.label}
+          />
+        </div>
+        {secondaryTab && !narrow ? (
+          <div className="document-pane" style={paneStyle}>
+            <DocumentPane
+              tab={secondaryTab}
+              paneId="secondary"
+              showSidebar={sidebarVisible && !focus}
+              loading={false}
+              error=""
+              onNavigate={closeDrawer}
+              onClose={() => closeWorkspaceTab(secondaryTab.tabId)}
+              onScrollTop={(value) => updateScrollTop(secondaryTab.tabId, value)}
+              onDropFile={(file) => void openBrowserFile(file)}
+            />
+          </div>
+        ) : null}
+      </div>
     </main>
   );
 }
