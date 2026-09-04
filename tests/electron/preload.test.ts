@@ -26,6 +26,7 @@ await import('../../electron/preload');
 interface ExposedAPI {
   selectDocument(): Promise<DocumentPayload | null>;
   openExternal(url: string): Promise<boolean>;
+  copyText(text: string): Promise<boolean>;
   assetUrl(documentId: string, relativePath: string): string;
   onDocumentOpened(callback: (document: DocumentPayload) => void): () => void;
 }
@@ -75,14 +76,16 @@ describe('preload bridge', () => {
   });
 
   it('exposes only intent-specific IPC invocations', async () => {
-    electron.invoke.mockResolvedValueOnce(null).mockResolvedValueOnce(true);
+    electron.invoke.mockResolvedValueOnce(null).mockResolvedValueOnce(true).mockResolvedValueOnce(true);
 
     await expect(api.selectDocument()).resolves.toBeNull();
     await expect(api.openExternal('https://example.com')).resolves.toBe(true);
+    await expect(api.copyText('const x = 1')).resolves.toBe(true);
 
     expect(electron.invoke.mock.calls).toEqual([
       [IPC.selectDocument],
       [IPC.openExternal, 'https://example.com'],
+      [IPC.copyText, 'const x = 1'],
     ]);
   });
 });

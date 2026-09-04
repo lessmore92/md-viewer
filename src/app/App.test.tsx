@@ -28,6 +28,7 @@ function installApi() {
   const unsubscribes: ReturnType<typeof vi.fn>[] = [];
   const selectDocument = vi.fn<() => Promise<DocumentPayload | null>>(async () => null);
   window.electronAPI = {
+    copyText: vi.fn(async () => true),
     selectDocument,
     openExternal: vi.fn(async () => true),
     assetUrl: (id, path) => `md-asset://local/${id}/${path}`,

@@ -1,8 +1,9 @@
 import { stat } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { app, BrowserWindow, dialog, ipcMain, Menu, net, protocol, shell } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, net, protocol, shell } from 'electron';
 import { IPC, type DocumentPayload } from './contracts';
+import { writeClipboardText } from './clipboard';
 import { createDocumentDelivery } from './document-delivery';
 import { readMarkdownDocument, resolveDocumentAsset } from './document-service';
 import { findMarkdownArgument } from './file-arguments';
@@ -230,6 +231,11 @@ function registerIpcHandlers(): void {
 
     await shell.openExternal(externalUrl.href);
     return true;
+  });
+
+  ipcMain.handle(IPC.copyText, (event, value: unknown) => {
+    requireTrustedSender(event);
+    return writeClipboardText(value, (text) => clipboard.writeText(text));
   });
 }
 

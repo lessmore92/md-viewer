@@ -10,4 +10,5 @@ export const IPC = {
   openedDocument: 'document:opened',
   rendererReady: 'renderer:ready',
   openExternal: 'navigation:open-external',
+  copyText: 'clipboard:copy-text',
 } as const;

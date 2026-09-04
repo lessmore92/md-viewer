@@ -13,6 +13,7 @@ function installElectronApi() {
 
   window.electronAPI = {
     assetUrl,
+    copyText: vi.fn(async () => true),
     openExternal,
     onDocumentOpened: vi.fn((callback: (document: DocumentPayload) => void) => {
       void callback;
