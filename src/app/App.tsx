@@ -190,7 +190,7 @@ export default function App() {
   const showSidebar = hasHeadings && !narrow && sidebarVisible && !focus;
 
   return (
-    <div
+    <main
       className={`app-shell${focus ? ' focus-mode' : ''}`}
       dir="rtl"
       lang="fa"
@@ -284,6 +284,6 @@ export default function App() {
         storageError={storageError}
         offlineLabel={offline.label}
       />
-    </div>
+    </main>
   );
 }

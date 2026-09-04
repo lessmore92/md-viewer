@@ -77,7 +77,22 @@ export function DocumentPane({
   }, [headings, onHeadingsChange]);
 
   const savedScrollTop = tab?.scrollTop ?? 0;
+  const lastReportedScroll = useRef<{
+    tabId: string | undefined;
+    document: typeof doc;
+    scrollTop: number;
+  } | null>(null);
   useEffect(() => {
+    const reported = lastReportedScroll.current;
+    // Parent state echoes normal scrolling; only external restoration needs a DOM write.
+    if (
+      reported?.tabId === tab?.tabId &&
+      reported?.document === doc &&
+      reported?.scrollTop === savedScrollTop
+    ) {
+      return;
+    }
+    lastReportedScroll.current = null;
     const frame = requestAnimationFrame(() => {
       if (scrollRef.current) scrollRef.current.scrollTop = savedScrollTop;
     });
@@ -96,12 +111,16 @@ export function DocumentPane({
 
   return (
     <>
-      <main
+      <section
         className={`reader-scroll${dragging ? ' is-dragging' : ''}`}
         ref={scrollRef}
         aria-label="محتوای سند"
         tabIndex={-1}
-        onScroll={() => onScrollTop(scrollRef.current?.scrollTop ?? 0)}
+        onScroll={() => {
+          const scrollTop = scrollRef.current?.scrollTop ?? 0;
+          lastReportedScroll.current = { tabId: tab?.tabId, document: doc, scrollTop };
+          onScrollTop(scrollTop);
+        }}
         onDragOver={(event) => {
           if (!window.electronAPI && event.dataTransfer.types.includes('Files')) {
             event.preventDefault();
@@ -222,7 +241,7 @@ export function DocumentPane({
             </aside>
           ) : null}
         </div>
-      </main>
+      </section>
       {doc ? (
         <ReadingStatus scrollRef={scrollRef} documentId={doc.documentId} words={words} />
       ) : (

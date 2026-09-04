@@ -1,7 +1,8 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { WorkspaceTab } from '../app/workspace';
+import App from '../app/App';
 import { installDialog, installMedia } from '../test/browser';
 import { DocumentPane } from './DocumentPane';
 
@@ -17,6 +18,7 @@ function tab(name: string, content = `# ${name}\n\n## Shared\n\n[Jump](#shared)`
 const handlers = { onNavigate: vi.fn(), onClose: vi.fn(), onScrollTop: vi.fn() };
 
 beforeEach(() => {
+  localStorage.clear();
   delete (window as Partial<Window>).electronAPI;
   installMedia();
   installDialog();
@@ -46,7 +48,7 @@ it('renders its own document, outline, and reading status', () => {
 it('scopes outline and fragment navigation to its pane despite duplicate heading IDs', async () => {
   const user = userEvent.setup();
   render(
-    <>
+    <main>
       <DocumentPane
         tab={tab('First')}
         showSidebar
@@ -63,9 +65,10 @@ it('scopes outline and fragment navigation to its pane despite duplicate heading
         paneId="secondary"
         {...handlers}
       />
-    </>,
+    </main>,
   );
-  const [first, second] = screen.getAllByRole('main');
+  expect(screen.getAllByRole('main')).toHaveLength(1);
+  const [first, second] = within(screen.getByRole('main')).getAllByRole('region');
   const firstScroll = vi.fn();
   const secondScroll = vi.fn();
   Object.defineProperty(within(first).getByRole('heading', { name: 'Shared' }), 'scrollIntoView', {
@@ -96,7 +99,7 @@ it('restores each tab scroll position and reports pane scrolling', async () => {
     ...handlers,
   };
   const { rerender } = render(<DocumentPane tab={first} {...props} />);
-  const root = screen.getByRole('main');
+  const root = screen.getByLabelText('محتوای سند');
   await waitFor(() => expect(root.scrollTop).toBe(140));
   fireEvent.scroll(root, { target: { scrollTop: 190 } });
   expect(handlers.onScrollTop).toHaveBeenLastCalledWith(190);
@@ -104,6 +107,76 @@ it('restores each tab scroll position and reports pane scrolling', async () => {
   await waitFor(() => expect(root.scrollTop).toBe(280));
   rerender(<DocumentPane tab={{ ...first, scrollTop: 190 }} {...props} />);
   await waitFor(() => expect(root.scrollTop).toBe(190));
+});
+
+it('keeps the page main in App around the document pane', async () => {
+  const user = userEvent.setup();
+  render(<App />);
+  const main = screen.getByRole('main');
+  expect(within(main).getByRole('region', { name: 'محتوای سند' })).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'مشاهدهٔ نمونه' }));
+  expect(screen.getAllByRole('main')).toHaveLength(1);
+  expect(within(main).getByRole('article')).toBeInTheDocument();
+});
+
+it('does not schedule restoration for scroll feedback but restores saved positions and documents', () => {
+  const frames = new Map<number, FrameRequestCallback>();
+  let nextFrame = 0;
+  const requestFrame = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+    frames.set(++nextFrame, callback);
+    return nextFrame;
+  });
+  vi.spyOn(window, 'cancelAnimationFrame').mockImplementation((id) => {
+    frames.delete(id);
+  });
+  const flushFrames = () =>
+    act(() => {
+      const pending = [...frames.values()];
+      frames.clear();
+      pending.forEach((callback) => callback(0));
+    });
+  const first = { ...tab('First'), scrollTop: 140 };
+  const props = {
+    showSidebar: true,
+    loading: false,
+    error: '',
+    paneId: 'primary' as const,
+    ...handlers,
+  };
+  const { rerender, unmount } = render(<DocumentPane tab={first} {...props} />);
+  const root = screen.getByLabelText('محتوای سند');
+  flushFrames();
+  expect(root.scrollTop).toBe(140);
+  const writeScrollTop = vi.spyOn(root, 'scrollTop', 'set');
+
+  for (const scrollTop of [190, 240, 310]) {
+    fireEvent.scroll(root, { target: { scrollTop } });
+    expect(handlers.onScrollTop).toHaveBeenLastCalledWith(scrollTop);
+    writeScrollTop.mockClear();
+    requestFrame.mockClear();
+    // Echo the saved position back just as App's state update does.
+    rerender(<DocumentPane tab={{ ...first, scrollTop }} {...props} />);
+    expect(requestFrame).not.toHaveBeenCalled();
+    flushFrames();
+    expect(writeScrollTop).not.toHaveBeenCalled();
+    expect(root.scrollTop).toBe(scrollTop);
+  }
+
+  // A new document in the same tab must restore even if its position matches the last report.
+  const replacement = { ...first, document: tab('Replacement').document, scrollTop: 310 };
+  rerender(<DocumentPane tab={replacement} {...props} />);
+  flushFrames();
+  expect(writeScrollTop).toHaveBeenCalledWith(310);
+  expect(root.scrollTop).toBe(310);
+
+  rerender(<DocumentPane tab={{ ...replacement, scrollTop: 75 }} {...props} />);
+  flushFrames();
+  expect(root.scrollTop).toBe(75);
+
+  rerender(<DocumentPane tab={{ ...first, scrollTop: 500 }} {...props} />);
+  expect(frames.size).toBeGreaterThan(0);
+  unmount();
+  expect(frames.size).toBe(0);
 });
 
 it('renders loading and errors without removing the current document and handles empty content', () => {
