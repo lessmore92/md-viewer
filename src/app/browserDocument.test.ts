@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { readBrowserFile, restoreBrowserDocument } from './browserDocument';
+import { documentKey } from './workspace';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -22,4 +23,40 @@ it('rejects an oversized file before reading it', async () => {
 it('ignores malformed saved document data', () => {
   localStorage.setItem('md-viewer-document-v1', '{"content":42,"fileName":"bad.md"}');
   expect(restoreBrowserDocument()).toBeNull();
+});
+
+it('maps matching browser documents to the same workspace key', () => {
+  expect(
+    documentKey({
+      fileName: 'note.md',
+      filePath: '',
+      documentId: 'first-render-id',
+      content: '# Shared',
+    }),
+  ).toBe(
+    documentKey({
+      fileName: 'note.md',
+      filePath: '',
+      documentId: 'second-render-id',
+      content: '# Shared',
+    }),
+  );
+});
+
+it('changes the workspace key when browser document content changes', () => {
+  expect(
+    documentKey({
+      fileName: 'note.md',
+      filePath: '',
+      documentId: 'first-render-id',
+      content: '# Shared',
+    }),
+  ).not.toBe(
+    documentKey({
+      fileName: 'note.md',
+      filePath: '',
+      documentId: 'second-render-id',
+      content: '# Changed',
+    }),
+  );
 });

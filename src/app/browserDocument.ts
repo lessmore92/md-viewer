@@ -1,6 +1,6 @@
 import type { DocumentPayload } from '../../electron/contracts';
 
-const documentKey = 'md-viewer-document-v1';
+export const browserDocumentStorageKey = 'md-viewer-document-v1';
 const maxBytes = 5 * 1024 * 1024;
 export const acceptedFiles = '.md,.markdown,.mdown,.mkd,.txt';
 
@@ -37,7 +37,7 @@ export function readBrowserFile(file: File): Promise<DocumentPayload> {
 
 export function restoreBrowserDocument(): DocumentPayload | null {
   try {
-    const value = JSON.parse(localStorage.getItem(documentKey) ?? 'null');
+    const value = JSON.parse(localStorage.getItem(browserDocumentStorageKey) ?? 'null');
     if (
       value &&
       typeof value.fileName === 'string' &&
@@ -60,8 +60,8 @@ export function restoreBrowserDocument(): DocumentPayload | null {
 
 export function saveBrowserDocument(doc: DocumentPayload | null): boolean {
   try {
-    if (doc) localStorage.setItem(documentKey, JSON.stringify(doc));
-    else localStorage.removeItem(documentKey);
+    if (doc) localStorage.setItem(browserDocumentStorageKey, JSON.stringify(doc));
+    else localStorage.removeItem(browserDocumentStorageKey);
     return true;
   } catch {
     return false;
