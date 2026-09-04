@@ -72,9 +72,12 @@ export default function App() {
   const outlineId = useId();
   const [hasHeadings, setHasHeadings] = useState(false);
 
-  const acceptDocument = useCallback((next: DocumentPayload) => {
-    // A success supersedes old errors, but other pending successes still become tabs.
-    ++latestRequest.current;
+  const acceptDocument = useCallback((next: DocumentPayload, request?: number) => {
+    if (request === undefined) {
+      // An OS-opened document cancels dialog results that are no longer relevant.
+      pendingRequests.current.clear();
+      setLoading(false);
+    }
     setWorkspace((current) => openInWorkspace(current, next));
     setError('');
     setDrawerOpen(false);
@@ -172,7 +175,7 @@ export default function App() {
     setError('');
     try {
       const next = await operation();
-      if (pendingRequests.current.has(request) && next) acceptDocument(next);
+      if (pendingRequests.current.has(request) && next) acceptDocument(next, request);
     } catch (reason) {
       if (pendingRequests.current.has(request) && request === latestRequest.current)
         setError(errorMessage(reason));

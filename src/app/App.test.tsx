@@ -169,6 +169,22 @@ it('keeps every successful selection when requests resolve out of order', async 
   expect(screen.getByRole('article', { name: 'Second.md' })).toBeInTheDocument();
 });
 
+it('reports a newer dialog failure after an older dialog succeeds', async () => {
+  const user = userEvent.setup();
+  const api = installApi();
+  const first = deferred<DocumentPayload | null>();
+  const second = deferred<DocumentPayload | null>();
+  api.selectDocument.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+  render(<App />);
+  await user.click(screen.getByRole('button', { name: 'باز کردن فایل' }));
+  await user.click(screen.getByRole('button', { name: 'باز کردن فایل' }));
+  await act(async () => first.resolve(payload('First')));
+  expect(screen.getByRole('article', { name: 'First.md' })).toBeInTheDocument();
+  await act(async () => second.reject(new Error('newer dialog failed')));
+  expect(screen.getByRole('alert')).toHaveTextContent('باز کردن فایل ممکن نشد');
+  expect(screen.getByRole('article', { name: 'First.md' })).toBeInTheDocument();
+});
+
 it('does not show an older dialog error after an OS-opened file', async () => {
   const user = userEvent.setup();
   const api = installApi();
@@ -559,7 +575,7 @@ it('keeps browser uploads and drops as tabs, reuses duplicate content and closes
   expect(screen.getAllByRole('tab')).toHaveLength(1);
 });
 
-it('retains a pending successful dialog after an OS open and ignores results after unmount', async () => {
+it('invalidates a pending dialog after an OS open and ignores results after unmount', async () => {
   const api = installApi();
   const user = userEvent.setup();
   const request = deferred<DocumentPayload | null>();
@@ -569,12 +585,14 @@ it('retains a pending successful dialog after an OS open and ignores results aft
   await user.click(screen.getByRole('button', { name: 'باز کردن فایل' }));
   api.opened(payload('OS'));
   await act(async () => request.resolve(payload('Dialog')));
-  expect(screen.getAllByRole('tab')).toHaveLength(2);
+  expect(screen.getAllByRole('tab')).toHaveLength(1);
+  expect(screen.getByRole('tab', { name: 'OS.md' })).toBeInTheDocument();
+  expect(screen.queryByRole('tab', { name: 'Dialog.md' })).not.toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: 'باز کردن فایل' }));
   view.unmount();
   await act(async () => abandoned.resolve(payload('Abandoned')));
   render(<App />);
-  expect(screen.getAllByRole('tab')).toHaveLength(2);
+  expect(screen.getAllByRole('tab')).toHaveLength(1);
   expect(screen.queryByRole('tab', { name: 'Abandoned.md' })).not.toBeInTheDocument();
 });
 
