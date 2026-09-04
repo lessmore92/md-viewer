@@ -7,3 +7,4 @@ release/
 build/*
 !build/icon.png
 .superpowers/
+.worktrees/
