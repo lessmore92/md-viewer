@@ -492,3 +492,51 @@ git commit -m "fix: harden Electron window restoration"
 ```
 
 If no correction was required, do not create an empty commit.
+
+---
+
+### Task 4: Semantic version and Windows installer
+
+**Files:**
+- Modify: `package.json`
+- Modify: `package-lock.json`
+- Generated artifact: `release/MD Viewer Setup 1.2.0.exe`
+
+**Interfaces:**
+- Consumes: the completed and verified window-state feature.
+- Produces: application version `1.2.0` and an installable Windows NSIS package.
+
+- [ ] **Step 1: Update package metadata using Semantic Versioning**
+
+Change the root package version from `1.1.0` to `1.2.0` in both `package.json` and `package-lock.json`. This is a minor release because it adds backward-compatible window-state behavior.
+
+- [ ] **Step 2: Verify metadata consistency**
+
+Run a Node assertion that reads both JSON files and verifies that their root versions are exactly `1.2.0` and that `package-lock.json` also records `packages[""]?.version` as exactly `1.2.0`.
+
+Expected: the assertion exits successfully.
+
+- [ ] **Step 3: Run the complete quality gate**
+
+Run: `npm run check`
+
+Expected: typechecking, lint, formatting check, tests, and production build all PASS without errors.
+
+- [ ] **Step 4: Build the Windows installer**
+
+Run: `npm run electron:build`
+
+Expected: Electron Builder produces `release/MD Viewer Setup 1.2.0.exe` successfully.
+
+- [ ] **Step 5: Inspect the release artifact**
+
+Verify that `release/MD Viewer Setup 1.2.0.exe` exists, has non-zero size, and has a fresh modification timestamp. Compute its SHA-256 checksum for delivery.
+
+- [ ] **Step 6: Commit version metadata**
+
+```bash
+git add package.json package-lock.json
+git commit -m "chore: release version 1.2.0"
+```
+
+Do not commit generated files from `release/`.
