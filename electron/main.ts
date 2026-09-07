@@ -19,7 +19,7 @@ import { createDocumentDelivery } from './document-delivery';
 import { readMarkdownDocument, resolveDocumentAsset } from './document-service';
 import { findMarkdownArgument } from './file-arguments';
 import { isTrustedSender, parseExternalUrl } from './security';
-import { loadWindowState, saveWindowState } from './window-state';
+import { createWindowStateTracker, loadWindowState, saveWindowState } from './window-state';
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 const packagedRendererPath = path.resolve(__dirname, '../dist/index.html');
@@ -112,9 +112,14 @@ function createWindow(): BrowserWindow {
       preload: path.join(__dirname, 'preload.js'),
     },
   });
+  const stateTracker = createWindowStateTracker(isMaximized);
 
   mainWindow = window;
   documentDelivery.markRendererLoading();
+
+  window.on('maximize', () => stateTracker.record('maximize', window.isFullScreen()));
+  window.on('unmaximize', () => stateTracker.record('unmaximize', window.isFullScreen()));
+  window.on('minimize', () => stateTracker.record('minimize', window.isFullScreen()));
 
   if (isMaximized) window.maximize();
 
@@ -139,7 +144,7 @@ function createWindow(): BrowserWindow {
   window.on('close', () => {
     saveWindowState(statePath, {
       ...window.getNormalBounds(),
-      isMaximized: window.isMaximized(),
+      isMaximized: stateTracker.isMaximized(),
     });
   });
 

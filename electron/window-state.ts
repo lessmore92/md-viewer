@@ -15,11 +15,33 @@ export interface WindowState {
   readonly isMaximized: boolean;
 }
 
+export type WindowStateEvent = 'maximize' | 'unmaximize' | 'minimize';
+
+export interface WindowStateTracker {
+  record(event: WindowStateEvent, isFullScreen: boolean): void;
+  isMaximized(): boolean;
+}
+
 export const DEFAULT_WINDOW_STATE: WindowState = {
   width: 1200,
   height: 800,
   isMaximized: false,
 };
+
+export function createWindowStateTracker(initialIsMaximized: boolean): WindowStateTracker {
+  let maximized = initialIsMaximized;
+
+  return {
+    record(event, isFullScreen) {
+      if (isFullScreen) return;
+      if (event === 'maximize') maximized = true;
+      if (event === 'unmaximize') maximized = false;
+    },
+    isMaximized() {
+      return maximized;
+    },
+  };
+}
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
