@@ -86,6 +86,29 @@ npm run check
 npm run electron:build
 ```
 
-این دستور به‌ترتیب کنترل تایپ رندرکننده و Electron، ساخت Electron و preload باندل‌شده، ساخت Vite و electron-builder را اجرا می‌کند. پیش از بسته‌بندی، آیکون ویندوز به‌شکل تکرارپذیر از منبع `build/icon.png` تولید می‌شود و associationهای ویندوز از همین آیکونِ جاسازی‌شده در فایل اجرایی استفاده می‌کنند. خروجی رابط در `dist/`، خروجی Electron در `dist-electron/` و نصب‌کنندهٔ NSIS در `release/` قرار می‌گیرد (برای نسخهٔ فعلی: `release/v1.1.0/MD Viewer Setup 1.1.0.exe`). بستهٔ بازشده برای بررسی نیز در `release/v1.1.0/win-unpacked/` ساخته می‌شود.
+این دستور به‌ترتیب کنترل تایپ رندرکننده و Electron، ساخت Electron و preload باندل‌شده، ساخت Vite و electron-builder را اجرا می‌کند. پیش از بسته‌بندی، آیکون ویندوز به‌شکل تکرارپذیر از منبع `build/icon.png` تولید می‌شود و associationهای ویندوز از همین آیکونِ جاسازی‌شده در فایل اجرایی استفاده می‌کنند. خروجی رابط در `dist/`، خروجی Electron در `dist-electron/` و نصب‌کنندهٔ NSIS در `release/` قرار می‌گیرد؛ برای نمونه در نسخهٔ ۱.۲.۰، فایل نصب `release/MD Viewer Setup 1.2.0.exe` و بستهٔ بازشده `release/win-unpacked/` هستند.
 
 نصب‌کننده هر چهار پسوند `.md`، `.markdown`، `.mdown` و `.mkd` را ثبت می‌کند. انتخاب یا تغییر برنامهٔ پیش‌فرض ممکن است به تأیید کاربر در تنظیمات Windows نیاز داشته باشد؛ صرف ساخت نصب‌کننده چیزی را نصب نمی‌کند و پیش‌فرض‌های سیستم را تغییر نمی‌دهد. برای انتشار عمومی، امضای کد ویندوز را جداگانه تنظیم کنید؛ در نبود گواهی، خروجی امضانشده است.
+
+## انتشار نسخهٔ ویندوز
+
+پیش از هر انتشار، نسخه را طبق [Semantic Versioning](https://semver.org/) افزایش دهید: `patch` برای رفع باگ، `minor` برای قابلیت جدید سازگار و `major` برای تغییر ناسازگار.
+
+```bash
+npm version patch --no-git-tag-version
+# یا: npm version minor --no-git-tag-version
+# یا: npm version major --no-git-tag-version
+npm test
+npm run electron:build
+```
+
+دستور `npm version` هر دو فایل `package.json` و `package-lock.json` را همگام می‌کند. سپس تغییر نسخه را commit کنید، یک tag با پیشوند `v` بسازید و آن را ارسال کنید:
+
+```bash
+git add package.json package-lock.json
+git commit -m "chore: release version 1.2.0"
+git tag -a v1.2.0 -m "MD Viewer v1.2.0"
+git push origin master --tags
+```
+
+برای انتشار در GitHub، از **Releases → Draft a new release** تگ `v1.2.0` را انتخاب کنید، عنوانی مانند `MD Viewer 1.2.0` بگذارید و فایل `release/MD Viewer Setup 1.2.0.exe` را ضمیمه کنید. فایل `release/MD Viewer Setup 1.2.0.exe.blockmap` برای فرایند به‌روزرسانی‌های آینده نیز قابل ضمیمه‌کردن است.

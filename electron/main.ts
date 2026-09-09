@@ -10,6 +10,7 @@ import {
   Menu,
   net,
   protocol,
+  screen,
   shell,
 } from 'electron';
 import { IPC, type DocumentPayload } from './contracts';
@@ -18,6 +19,7 @@ import { createDocumentDelivery } from './document-delivery';
 import { readMarkdownDocument, resolveDocumentAsset } from './document-service';
 import { findMarkdownArgument } from './file-arguments';
 import { isTrustedSender, parseExternalUrl } from './security';
+import { createWindowStateTracker, loadWindowState, saveWindowState } from './window-state';
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 const packagedRendererPath = path.resolve(__dirname, '../dist/index.html');
@@ -90,9 +92,14 @@ function focusMainWindow(): void {
 }
 
 function createWindow(): BrowserWindow {
+  const statePath = path.join(app.getPath('userData'), 'window-state.json');
+  const windowState = loadWindowState(
+    statePath,
+    screen.getAllDisplays().map(({ workArea }) => workArea),
+  );
+  const { isMaximized, ...bounds } = windowState;
   const window = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    ...bounds,
     minWidth: 600,
     minHeight: 400,
     title: 'MD Viewer',
@@ -105,9 +112,16 @@ function createWindow(): BrowserWindow {
       preload: path.join(__dirname, 'preload.js'),
     },
   });
+  const stateTracker = createWindowStateTracker(isMaximized);
 
   mainWindow = window;
   documentDelivery.markRendererLoading();
+
+  window.on('maximize', () => stateTracker.record('maximize', window.isFullScreen()));
+  window.on('unmaximize', () => stateTracker.record('unmaximize', window.isFullScreen()));
+  window.on('minimize', () => stateTracker.record('minimize', window.isFullScreen()));
+
+  if (isMaximized) window.maximize();
 
   window.webContents.on('did-start-loading', () => {
     documentDelivery.markRendererLoading();
@@ -126,6 +140,13 @@ function createWindow(): BrowserWindow {
   } else {
     void window.loadURL(trustedRendererUrl);
   }
+
+  window.on('close', () => {
+    saveWindowState(statePath, {
+      ...window.getNormalBounds(),
+      isMaximized: stateTracker.isMaximized(),
+    });
+  });
 
   window.on('closed', () => {
     if (mainWindow === window) {
