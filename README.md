@@ -102,13 +102,15 @@ npm test
 npm run electron:build
 ```
 
-دستور `npm version` هر دو فایل `package.json` و `package-lock.json` را همگام می‌کند. سپس تغییر نسخه را commit کنید، یک tag با پیشوند `v` بسازید و آن را ارسال کنید:
+دستور `npm version` هر دو فایل `package.json` و `package-lock.json` را همگام می‌کند. سپس تغییر نسخه را commit کنید، یک tag با پیشوند `v` بسازید و آن را از شاخهٔ `main` ارسال کنید:
 
 ```bash
 git add package.json package-lock.json
-git commit -m "chore: release version 1.2.0"
-git tag -a v1.2.0 -m "MD Viewer v1.2.0"
-git push origin master --tags
+git commit -m "chore: release version 1.2.1"
+git tag -a v1.2.1 -m "MD Viewer v1.2.1"
+git push origin main --tags
 ```
 
-برای انتشار در GitHub، از **Releases → Draft a new release** تگ `v1.2.0` را انتخاب کنید، عنوانی مانند `MD Viewer 1.2.0` بگذارید و فایل `release/MD Viewer Setup 1.2.0.exe` را ضمیمه کنید. فایل `release/MD Viewer Setup 1.2.0.exe.blockmap` برای فرایند به‌روزرسانی‌های آینده نیز قابل ضمیمه‌کردن است.
+با ارسال تگ `v*`، GitHub Actions ابتدا تاریخچه را برای کلید یا رمزِ ناخواسته بررسی می‌کند. سپس کنترل‌های کیفیت را اجرا می‌کند، نصب‌کنندهٔ ویندوز را می‌سازد و فایل‌های `release/*.exe` و `release/*.blockmap` را به GitHub Release همان تگ اضافه می‌کند. این فرایند از توکن موقت GitHub استفاده می‌کند؛ هیچ توکن یا گواهی‌ای را در مخزن قرار ندهید.
+
+برای انتشار عمومی، امضای کد ویندوز را جداگانه تنظیم کنید؛ در نبود گواهی، خروجی امضانشده است.

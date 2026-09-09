@@ -8,3 +8,11 @@ build/*
 !build/icon.png
 .superpowers/
 .worktrees/
+.pnpm-store/
+.env*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+.npmrc
