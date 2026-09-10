@@ -1,116 +1,133 @@
 # MD Viewer
 
-خوانشگر Markdown برای دسکتاپ و وب، با پشتیبانی آفلاین، ظاهر نزدیک به GitHub و متن فارسی/عربی و انگلیسی؛ ساخته‌شده با Electron، React و TypeScript.
+MD Viewer is a private, GitHub-style Markdown reader for Windows and the web. Built with Electron, React, and TypeScript, it provides a focused way to read local documentation online or offline.
 
-## امکانات
+## Highlights
 
-- رابط تازه با آیکون کتاب، نوار ابزار خواندن، سند نمونهٔ فارسی/انگلیسی و چیدمان مناسب موبایل.
-- هر سند تازه در یک تب جدا باز می‌شود. اگر همان فایل دوباره انتخاب شود، تب تکراری ساخته نمی‌شود و همان تب موجود فعال می‌شود.
-- در نمایشگرهای عریض‌تر از ۹۶۰ پیکسل، حالت Split دو تب را در دو پنل مستقل کنار هم نشان می‌دهد. در عرض ۹۶۰ پیکسل و کمتر، Split خودکار بسته می‌شود و برنامه به نمایش تک‌پنلی برمی‌گردد.
-- گزینهٔ «بازگردانی تب‌ها هنگام شروع» به‌طور پیش‌فرض روشن است. تب‌ها، تب فعال و انتخاب Split فقط روی همان دستگاه ذخیره می‌شوند و به سرور فرستاده نمی‌شوند؛ سندهای بازگردانی‌شده از ابتدای صفحه باز می‌شوند. خاموش‌کردن این گزینه تب‌های نشست جاری را نمی‌بندد و از شروع بعدی اعمال می‌شود.
-- اندازهٔ متن از ۱۴ تا ۲۸ پیکسل، سه فاصلهٔ خطوط و سه عرض متن؛ تنظیمات برای استفادهٔ بعدی حفظ می‌شوند و قابل بازنشانی‌اند.
-- حالت «کتابخوان» (`ebook-reader`) با زمینهٔ کاغذی، متن و تصاویر تک‌رنگ و قالبی شبیه نمایشگر E-Ink؛ از دکمهٔ «کتابخوان» در نوار بالا فعال می‌شود و انتخابش ذخیره می‌ماند. با خاموش کردن آن، تم روشن یا تیرهٔ قبلی برمی‌گردد. اندازهٔ متن، فاصلهٔ خطوط و حالت تمرکز در این ظاهر هم قابل استفاده‌اند.
-- حالت تمرکز با خروج از طریق دکمه یا `Escape`، شمارش تقریبی واژه‌ها، زمان تخمینی مطالعه (۲۰۰ واژه در دقیقه)، پیشرفت مطالعه و رفتن به ابتدای سند.
-- نسخهٔ وب: باز کردن یا کشیدن فایل‌های Markdown و `.txt` تا ۵ مگابایت، میان‌بر `Ctrl+O` / `Cmd+O`، نگه‌داری تب‌های باز در همان مرورگر و بستن جداگانهٔ هر تب. فایل انتخابی به سرور ارسال نمی‌شود. مسدود بودن یا پر شدن حافظه مانع خواندن فایل نمی‌شود و پیام مشخصی دارد.
+- Open local Markdown documents in a clean, responsive workspace.
+- Keep multiple documents in tabs and restore the desktop workspace between sessions.
+- Compare documents side by side on wider screens; the layout adapts for smaller windows.
+- Adjust font size, line height, reading width, and light or dark themes.
+- Track reading progress, word count, and estimated reading time in focus mode.
+- Use E-Ink mode for a calm, high-contrast reading experience.
+- Render GitHub Flavored Markdown, syntax-highlighted code, tables, task lists, footnotes, math, admonitions, and Mermaid diagrams.
+- Read right-to-left documents with direction-aware layout and typography.
+- Navigate long documents with an h1–h3 table of contents.
+- Open `.md` and `.txt` files in the web app, including documents up to 5 MB.
 
-- باز کردن فایل‌های `.md`، `.markdown`، `.mdown` و `.mkd` از دکمهٔ برنامه، منوی File یا میان‌بر `Ctrl+O`؛ مسیر فایل را می‌توان هنگام اجرای برنامه نیز ارسال کرد.
-- نمایش GitHub-style شامل عنوان‌ها، فهرست‌ها، نقل‌قول، جدول، تسک‌لیست، خط‌خورده، لینک، تصویر و کد با برجسته‌سازی نحوی؛ هشدارهای `NOTE`، `TIP`، `IMPORTANT`، `WARNING` و `CAUTION` نیز پشتیبانی می‌شوند.
-- فهرست مطالب H1–H3 در نوار کناری سمت راست با نمایش بخش فعال و جابه‌جایی به عنوان انتخاب‌شده؛ در پنجره‌های باریک (۹۶۰ پیکسل و کمتر) فهرست به کشوی قابل بستن تبدیل می‌شود.
-- تشخیص جهت متن فارسی/عربی و انگلیسی در بخش‌های سند، نمایش کد به صورت LTR و حالت روشن/تیره با ذخیرهٔ انتخاب کاربر.
-- نمایش تصاویر نسبی مثل `![تصویر](images/example.png)` از پوشهٔ سند و زیرپوشه‌های آن. مسیرهای خارج از پوشهٔ سند، از جمله خروج با `..` یا پیوند نمادین، مجاز نیستند. تصاویر HTTP(S) و data-image نیز قابل نمایش‌اند؛ تصاویر اینترنتی هنگام نمایش به میزبانشان درخواست می‌فرستند.
+## Privacy and Security
 
-## لینک‌ها و امنیت
+Your documents stay under your control.
 
-لینک‌های داخلی `#heading` داخل سند جابه‌جا می‌شوند. فقط لینک‌های `http:`، `https:` و `mailto:` با کلیک کاربر به مرورگر یا برنامهٔ پیش‌فرض سیستم فرستاده می‌شوند. لینک‌های فایل نسبی و طرح‌های دیگر مانند `file:` و `javascript:` باز نمی‌شوند. HTML سند پاک‌سازی می‌شود؛ اسکریپت، iframe و فرم اجازهٔ اجرا ندارند.
+- The desktop app opens files from your computer; it does not upload document contents to a service.
+- The web app uses the browser's file picker and keeps its workspace in browser storage for offline use.
+- Desktop image loading is restricted to files inside the opened document's folder. Path traversal and symlink escapes are rejected.
+- Web browsers cannot read arbitrary local relative images, so those images are unavailable in the web app.
+- Remote images use their original HTTP(S) hosts and are not cached for offline use.
+- Markdown is sanitized before rendering. Scripts, iframes, forms, `javascript:` URLs, and local-file links are blocked; safe HTTP(S), `mailto:`, and in-document links remain available.
+- The Electron app uses sandboxing, context isolation, disabled Node integration, and a restrictive Content Security Policy.
 
-رندرکننده با sandbox، جداسازی context و بدون Node integration اجرا می‌شود. دسترسی فایل از طریق عملیات محدود برنامه انجام می‌شود؛ صفحه API خواندن مسیر دلخواه ندارد. CSP نسخهٔ نهایی اسکریپت را فقط از منابع خود برنامه می‌پذیرد.
+## Quick Start
 
-## توسعه
-
-برای توسعه از Node.js 22.12 یا جدیدتر (نسخهٔ LTS توصیه می‌شود) و npm استفاده کنید:
+### Desktop app
 
 ```bash
 npm ci
 npm run electron:dev
 ```
 
-این دستور کد Electron و preload را می‌سازد، Vite را روی `http://localhost:5173/` اجرا می‌کند و برنامه را باز می‌کند. پورت ۵۱۷۳ باید آزاد باشد. بعد از تغییر کد Electron یا preload، دستور را دوباره اجرا کنید؛ تغییرات رابط کاربری با Vite تازه می‌شوند. nonce مربوط به React Refresh فقط در حالت توسعه به CSP افزوده می‌شود.
+The development desktop app opens automatically. Use the file picker to open a Markdown document.
 
-برای توسعهٔ رابط در مرورگر، `npm run dev` کافی است.
-
-## نسخهٔ وب و استفادهٔ آفلاین
+### Web app
 
 ```bash
+npm ci
 npm run build:web
 npm run preview
 ```
 
-نشانی محلی پیش‌فرض پیش‌نمایش `http://localhost:4173/` است. ابتدا با اینترنت برنامه را باز کنید و منتظر «آمادهٔ آفلاین» بمانید. سپس خود برنامه، فونت‌ها، سند نمونه و فضای کار چندتب و سندهای ذخیره‌شده بدون اینترنت هم قابل استفاده‌اند. از گزینهٔ نصب مرورگر، یا دکمهٔ «نصب برنامه» در مرورگرهای پشتیبان، می‌توانید آن را به دستگاه اضافه کنید. در برخی مرورگرها این گزینه در منوی اصلی یا Share قرار دارد.
+Open the preview address shown in the terminal, then select a local `.md` or `.txt` file.
 
-برای انتشار، محتویات `dist/` را روی یک میزبان فایل‌های ایستا با HTTPS قرار دهید. ریشهٔ سایت یا یک زیرمسیر مثل `/reader/` پشتیبانی می‌شود؛ نشانی پوشه باید با `/` تمام شود. فایل `sw.js` را با نوع JavaScript و بدون cache بلندمدت سرو کنید؛ MIME فایل `manifest.webmanifest` باید `application/manifest+json` باشد. فایل‌های دارای hash در `assets/` را می‌توان بلندمدت cache کرد. این پروژه برای نسخهٔ وب به بک‌اند نیاز ندارد.
+## Using MD Viewer
 
-Service Worker فقط در خروجی تولیدی و روی HTTPS یا localhost فعال می‌شود؛ در `npm run dev` و Electron فعال نیست. برای دریافت به‌روزرسانی، برنامه را آنلاین باز کنید و سپس همهٔ پنجره‌های آن را ببندید و دوباره باز کنید. نسخهٔ جدید پس از آماده شدن کامل cache جایگزین می‌شود.
+### Desktop
 
-تصاویر اینترنتی سند در cache آفلاین برنامه ذخیره نمی‌شوند. مرورگر با انتخاب یک فایل به تصاویر کنار آن دسترسی ندارد؛ برای اسناد دارای تصویر نسبی از نسخهٔ دسکتاپ استفاده کنید. پاک کردن داده‌های سایت، حالت خصوصی یا محدودیت حافظهٔ مرورگر می‌تواند فضای کار چندتب، سندهای ذخیره‌شده یا cache را حذف کند. ذخیره‌سازی فضای کار جایگزین فایل اصلی یا نسخهٔ پشتیبان نیست.
+Open Markdown documents with the file picker. Supported extensions are `.md`, `.markdown`, `.mdown`, and `.mkd`. Documents open in tabs, and the app restores your workspace when you return.
 
-آزمون مرورگر روی خروجی تولیدی:
+On screens wider than 960 pixels, open a second tab alongside the first to compare two documents. Use the reading controls to adjust the type scale, line height, content width, color theme, focus mode, and E-Ink mode.
+
+### Web
+
+Choose a `.md` or `.txt` file from your browser. The web version supports files up to 5 MB and stores the current workspace locally in the browser, so it remains useful offline after the initial load.
+
+Because browsers protect your local filesystem, relative images stored next to a Markdown file are available in the desktop app but not in the web app.
+
+## Development
+
+Install dependencies once:
+
+```bash
+npm ci
+```
+
+| Command                  | Purpose                                             |
+| ------------------------ | --------------------------------------------------- |
+| `npm run dev`            | Start the web development server.                   |
+| `npm run electron:dev`   | Start the Electron development app.                 |
+| `npm run build:web`      | Build the web app for production.                   |
+| `npm run build:electron` | Build Electron main and preload bundles.            |
+| `npm run electron:build` | Create the Windows installer.                       |
+| `npm run generate:icons` | Regenerate application icons from the source asset. |
+
+## Quality Checks
+
+Run the full static-quality suite before contributing or publishing a release:
+
+```bash
+npm run check
+```
+
+For browser end-to-end tests, build the web app first:
 
 ```bash
 npm run build:web
 npm run test:e2e
 ```
 
-Playwright از Chrome/Edge نصب‌شده در مسیرهای معمول ویندوز استفاده می‌کند؛ در سیستم‌های دیگر `npx playwright install chromium` را اجرا کنید یا `CHROMIUM_PATH` را به مسیر مرورگر بدهید. آزمون‌ها قطع اینترنت و بازخوانی، فایل محلی، حفظ تنظیمات، حالت تمرکز و عرض‌های موبایل را بررسی می‌کنند.
+## Build a Windows Installer
 
-## آیکون
-
-منبع برداری آیکون در `public/icon.svg` و شش طرح مقایسه‌ای در `docs/design/icon-concepts.html` قرار دارد. برای تولید مجدد خروجی‌های PNG، PWA، Apple touch و ICO:
-
-```bash
-npm run generate:icons
-```
-
-این دستور از مرورگر محلی Playwright برای تبدیل SVG استفاده می‌کند؛ هیچ سرویس تولید تصویر یا کلید API لازم ندارد.
-
-برای کنترل تایپ رندرکننده و Electron، lint، قالب‌بندی، آزمون‌ها و ساخت رابط تولیدی:
-
-```bash
-npm run check
-```
-
-## ساخت نسخه نهایی
-
-در ویندوز اجرا کنید:
+Create the distributable Windows installer with:
 
 ```bash
 npm run electron:build
 ```
 
-این دستور به‌ترتیب کنترل تایپ رندرکننده و Electron، ساخت Electron و preload باندل‌شده، ساخت Vite و electron-builder را اجرا می‌کند. پیش از بسته‌بندی، آیکون ویندوز به‌شکل تکرارپذیر از منبع `build/icon.png` تولید می‌شود و associationهای ویندوز از همین آیکونِ جاسازی‌شده در فایل اجرایی استفاده می‌کنند. خروجی رابط در `dist/`، خروجی Electron در `dist-electron/` و نصب‌کنندهٔ NSIS در `release/` قرار می‌گیرد؛ برای نمونه در نسخهٔ ۱.۲.۰، فایل نصب `release/MD Viewer Setup 1.2.0.exe` و بستهٔ بازشده `release/win-unpacked/` هستند.
+The generated installer and blockmap files are written to the `release/` directory.
 
-نصب‌کننده هر چهار پسوند `.md`، `.markdown`، `.mdown` و `.mkd` را ثبت می‌کند. انتخاب یا تغییر برنامهٔ پیش‌فرض ممکن است به تأیید کاربر در تنظیمات Windows نیاز داشته باشد؛ صرف ساخت نصب‌کننده چیزی را نصب نمی‌کند و پیش‌فرض‌های سیستم را تغییر نمی‌دهد. برای انتشار عمومی، امضای کد ویندوز را جداگانه تنظیم کنید؛ در نبود گواهی، خروجی امضانشده است.
+## GitHub Releases
 
-## انتشار نسخهٔ ویندوز
+Pushing a version tag that starts with `v` runs the release workflow. It scans the repository for secrets, runs `npm run check`, builds the Windows installer, and attaches the `.exe` installer and `.blockmap` file to the GitHub Release.
 
-پیش از هر انتشار، نسخه را طبق [Semantic Versioning](https://semver.org/) افزایش دهید: `patch` برای رفع باگ، `minor` برای قابلیت جدید سازگار و `major` برای تغییر ناسازگار.
+Use this sequence for a patch release (replace the version when needed):
 
 ```bash
 npm version patch --no-git-tag-version
-# یا: npm version minor --no-git-tag-version
-# یا: npm version major --no-git-tag-version
-npm test
-npm run electron:build
-```
-
-دستور `npm version` هر دو فایل `package.json` و `package-lock.json` را همگام می‌کند. سپس تغییر نسخه را commit کنید، یک tag با پیشوند `v` بسازید و آن را از شاخهٔ `main` ارسال کنید:
-
-```bash
 git add package.json package-lock.json
 git commit -m "chore: release version 1.2.1"
 git tag -a v1.2.1 -m "MD Viewer v1.2.1"
 git push origin main --tags
 ```
 
-با ارسال تگ `v*`، GitHub Actions ابتدا تاریخچه را برای کلید یا رمزِ ناخواسته بررسی می‌کند. سپس کنترل‌های کیفیت را اجرا می‌کند، نصب‌کنندهٔ ویندوز را می‌سازد و فایل‌های `release/*.exe` و `release/*.blockmap` را به GitHub Release همان تگ اضافه می‌کند. این فرایند از توکن موقت GitHub استفاده می‌کند؛ هیچ توکن یا گواهی‌ای را در مخزن قرار ندهید.
+## Project Structure
 
-برای انتشار عمومی، امضای کد ویندوز را جداگانه تنظیم کنید؛ در نبود گواهی، خروجی امضانشده است.
+```text
+electron/        Electron main process and preload bridge
+src/             React application and Markdown reader UI
+tests/           Unit, integration, and browser end-to-end tests
+docs/            Product notes and design documentation
+release/         Generated Windows installers (not tracked)
+```
+
+## License
+
+This project is private. All rights reserved.
