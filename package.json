@@ -12,7 +12,7 @@
     "generate:windows-icon": "node scripts/generate-windows-icon.mjs",
     "preview": "vite preview",
     "electron:dev": "npm run build:electron && concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "npm run typecheck:renderer && npm run typecheck:electron && npm run build:electron && vite build && npm run generate:windows-icon && electron-builder",
+    "electron:build": "npm run typecheck:renderer && npm run typecheck:electron && npm run build:electron && vite build && npm run generate:windows-icon && electron-builder --publish never",
     "typecheck:renderer": "tsc --noEmit -p tsconfig.json",
     "typecheck:electron": "tsc --noEmit -p tsconfig.electron.json",
     "lint": "eslint .",

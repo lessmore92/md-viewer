@@ -32,5 +32,6 @@ describe('electron-builder configuration', () => {
       true,
     );
     expect(packageConfig.scripts?.['electron:build']).toContain('npm run generate:windows-icon');
+    expect(packageConfig.scripts?.['electron:build']).toContain('electron-builder --publish never');
   });
 });
