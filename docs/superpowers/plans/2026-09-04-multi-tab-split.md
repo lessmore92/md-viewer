@@ -37,12 +37,14 @@
 ### Task 1: Build the workspace state and persistence boundary
 
 **Files:**
+
 - Create: `src/app/workspace.ts`
 - Create: `src/app/workspace.test.ts`
 - Modify: `src/app/browserDocument.ts`
 - Modify: `src/app/browserDocument.test.ts`
 
 **Interfaces:**
+
 - `WorkspaceTab = { tabId: string; document: DocumentPayload; documentKey: string; scrollTop: number }`
 - `WorkspaceState = { tabs: WorkspaceTab[]; activeTabId: string | null; splitTabId: string | null; restoreTabs: boolean }`
 - `createWorkspace(restoreTabs?: boolean): WorkspaceState`
@@ -129,10 +131,12 @@ git commit -m "feat: add persistent tab workspace state"
 ### Task 2: Add the accessible tab strip and Split controls
 
 **Files:**
+
 - Create: `src/components/TabBar.tsx`
 - Create: `src/components/TabBar.test.tsx`
 
 **Interfaces:**
+
 - `TabBarProps = { tabs: WorkspaceTab[]; activeTabId: string | null; splitTabId: string | null; narrow: boolean; onActivate(tabId: string): void; onClose(tabId: string): void; onToggleSplit(): void; onSelectSplit(tabId: string): void }`
 
 - [ ] **Step 1: Write failing interaction tests**
@@ -147,7 +151,9 @@ it('marks the active tab and exposes a close button by file name', async () => {
 });
 
 it('offers only non-active tabs to the split selector', () => {
-  render(<TabBar tabs={tabs} activeTabId="first" splitTabId="second" narrow={false} {...handlers} />);
+  render(
+    <TabBar tabs={tabs} activeTabId="first" splitTabId="second" narrow={false} {...handlers} />,
+  );
   expect(screen.getByLabelText('سند پنل دوم')).toHaveValue('second');
   expect(screen.getByRole('option', { name: 'First.md' })).toBeDisabled();
 });
@@ -181,11 +187,13 @@ git commit -m "feat: add accessible document tab bar"
 ### Task 3: Extract an independent document pane
 
 **Files:**
+
 - Create: `src/components/DocumentPane.tsx`
 - Create: `src/components/DocumentPane.test.tsx`
 - Modify: `src/app/App.tsx`
 
 **Interfaces:**
+
 - `DocumentPaneProps = { tab: WorkspaceTab; paneId: PaneId; showSidebar: boolean; loading: boolean; error: string; onNavigate(id: string, pane: PaneId): void; onClose(): void; onScrollTop(value: number): void }`
 - `PaneId = 'primary' | 'secondary'`
 
@@ -193,7 +201,16 @@ git commit -m "feat: add accessible document tab bar"
 
 ```tsx
 it('renders its own document, outline, and reading status', () => {
-  render(<DocumentPane tab={tab('Guide')} showSidebar loading={false} error="" paneId="primary" {...handlers} />);
+  render(
+    <DocumentPane
+      tab={tab('Guide')}
+      showSidebar
+      loading={false}
+      error=""
+      paneId="primary"
+      {...handlers}
+    />,
+  );
   expect(screen.getByRole('article', { name: 'Guide.md' })).toBeInTheDocument();
   expect(screen.getByRole('navigation')).toBeInTheDocument();
   expect(screen.getByRole('progressbar', { name: 'پیشرفت مطالعه' })).toBeInTheDocument();
@@ -223,11 +240,13 @@ Expected: PASS.
 ### Task 4: Integrate workspace behavior in `App`
 
 **Files:**
+
 - Modify: `src/app/App.tsx`
 - Modify: `src/app/App.test.tsx`
 - Modify: `src/components/ReadingToolbar.tsx`
 
 **Interfaces:**
+
 - `ReadingToolbarProps` gains `restoreTabs: boolean` and `onRestoreTabsChange(value: boolean): void`.
 - `App` owns `WorkspaceState`, derives `primaryTab` from `activeTabId`, and derives `secondaryTab` from `splitTabId`.
 
@@ -290,6 +309,7 @@ git commit -m "feat: integrate multi-tab reading workspace"
 ### Task 5: Add Split layout styling and responsive polish
 
 **Files:**
+
 - Modify: `src/index.css`
 
 - [ ] **Step 1: Add layout assertions to the E2E test before styling**
@@ -318,6 +338,7 @@ git commit -m "feat: style responsive split document panes"
 ### Task 6: Update product documentation and perform the full verification
 
 **Files:**
+
 - Modify: `README.md`
 - Modify: `PRODUCT.md`
 

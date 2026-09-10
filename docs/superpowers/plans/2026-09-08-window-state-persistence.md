@@ -24,10 +24,12 @@
 ### Task 1: Window-state persistence module
 
 **Files:**
+
 - Create: `electron/window-state.ts`
 - Create: `tests/electron/window-state.test.ts`
 
 **Interfaces:**
+
 - Consumes: a state-file path string and current display work areas supplied by `electron/main.ts`.
 - Produces: `WindowBounds`, `WindowState`, `DEFAULT_WINDOW_STATE`, `loadWindowState(filePath, displays)`, and `saveWindowState(filePath, state)`.
 
@@ -156,7 +158,8 @@ function parseWindowState(value: unknown, displays: readonly WindowBounds[]): Wi
     !isFiniteNumber(candidate.width) ||
     !isFiniteNumber(candidate.height) ||
     typeof candidate.isMaximized !== 'boolean'
-  ) return null;
+  )
+    return null;
 
   const state: WindowBounds & WindowState = {
     x: candidate.x,
@@ -169,12 +172,11 @@ function parseWindowState(value: unknown, displays: readonly WindowBounds[]): Wi
   return state;
 }
 
-export function loadWindowState(
-  filePath: string,
-  displays: readonly WindowBounds[],
-): WindowState {
+export function loadWindowState(filePath: string, displays: readonly WindowBounds[]): WindowState {
   try {
-    return parseWindowState(JSON.parse(readFileSync(filePath, 'utf8')), displays) ?? DEFAULT_WINDOW_STATE;
+    return (
+      parseWindowState(JSON.parse(readFileSync(filePath, 'utf8')), displays) ?? DEFAULT_WINDOW_STATE
+    );
   } catch {
     return DEFAULT_WINDOW_STATE;
   }
@@ -329,10 +331,12 @@ git commit -m "feat: persist validated window state"
 ### Task 2: Electron window lifecycle integration
 
 **Files:**
+
 - Modify: `electron/main.ts`
 - Create: `tests/electron/window-state-integration.test.ts`
 
 **Interfaces:**
+
 - Consumes: `loadWindowState(filePath, displays): WindowState` and `saveWindowState(filePath, state): boolean` from Task 1.
 - Produces: startup restoration and close-time persistence in the main Electron window lifecycle.
 
@@ -456,9 +460,11 @@ git commit -m "feat: restore Electron window state"
 ### Task 3: Final behavior verification
 
 **Files:**
+
 - Modify only if verification reveals a defect: `electron/window-state.ts`, `electron/main.ts`, or their corresponding tests.
 
 **Interfaces:**
+
 - Consumes: the completed persistence module and Electron lifecycle integration.
 - Produces: verified launch/close behavior for normal and maximized windows.
 
@@ -498,11 +504,13 @@ If no correction was required, do not create an empty commit.
 ### Task 4: Semantic version and Windows installer
 
 **Files:**
+
 - Modify: `package.json`
 - Modify: `package-lock.json`
 - Generated artifact: `release/MD Viewer Setup 1.2.0.exe`
 
 **Interfaces:**
+
 - Consumes: the completed and verified window-state feature.
 - Produces: application version `1.2.0` and an installable Windows NSIS package.
 

@@ -22,6 +22,7 @@
 ### Task 1: Secure Electron clipboard bridge
 
 **Files:**
+
 - Modify: `electron/contracts.ts`
 - Modify: `electron/preload.ts`
 - Modify: `electron/main.ts`
@@ -31,6 +32,7 @@
 - Create: `tests/electron/clipboard.test.ts`
 
 **Interfaces:**
+
 - Produces: `IPC.copyText = 'clipboard:copy-text'`.
 - Produces: `window.electronAPI.copyText(text: string): Promise<boolean>`.
 - Produces: `writeClipboardText(value: unknown, writeText: (text: string) => void): boolean`.
@@ -50,10 +52,7 @@ Expected: FAIL because `IPC.copyText`, `api.copyText`, and `writeClipboardText` 
 Add the IPC constant and preload method. Implement:
 
 ```ts
-export function writeClipboardText(
-  value: unknown,
-  writeText: (text: string) => void,
-): boolean {
+export function writeClipboardText(value: unknown, writeText: (text: string) => void): boolean {
   if (typeof value !== 'string') return false;
   writeText(value);
   return true;
@@ -82,11 +81,13 @@ git commit -m "fix: copy code through Electron clipboard"
 ### Task 2: Renderer transport and accessible local feedback
 
 **Files:**
+
 - Modify: `src/markdown/Code.tsx`
 - Modify: `src/markdown/MarkdownView.test.tsx`
 - Modify: `src/styles/github.css`
 
 **Interfaces:**
+
 - Consumes: `window.electronAPI.copyText(text: string): Promise<boolean>` from Task 1.
 - Produces: `copyText(text: string): Promise<boolean>` inside `Code.tsx`.
 - Produces: copy states `'idle' | 'success' | 'error'` local to each `Pre`.
@@ -140,9 +141,11 @@ git commit -m "feat: show code copy feedback"
 ### Task 3: End-to-end verification
 
 **Files:**
+
 - Modify only if verification exposes a defect in files already listed above.
 
 **Interfaces:**
+
 - Consumes: the Electron bridge and renderer copy control delivered by Tasks 1 and 2.
 - Produces: verified web and packaged-renderer builds with no regression.
 
