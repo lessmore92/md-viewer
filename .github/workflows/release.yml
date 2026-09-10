@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 jobs:
   secret-scan:
@@ -48,3 +50,30 @@ jobs:
           } else {
             gh release create $env:GITHUB_REF_NAME release/*.exe release/*.blockmap --verify-tag --generate-notes
           }
+
+  pages:
+    name: Build and deploy web app
+    needs: [secret-scan, release]
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Verify and build web app
+        run: npm run typecheck:renderer && npm test && npm run build:web
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload web artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
