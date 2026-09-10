@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { runInNewContext } from 'node:vm';
@@ -152,7 +152,7 @@ function workerRuntime(
 }
 
 beforeAll(async () => {
-  fixture = await mkdtemp(join(tmpdir(), 'md-viewer-offline-'));
+  fixture = await realpath(await mkdtemp(join(tmpdir(), 'md-viewer-offline-')));
   await mkdir(join(fixture, 'public/fonts'), { recursive: true });
   await writeFile(
     join(fixture, 'index.html'),

@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -95,7 +95,7 @@ describe('resolveDocumentAsset', () => {
     const document = await readMarkdownDocument(filePath);
 
     await expect(resolveDocumentAsset(document.documentId, 'images%2Fdiagram.png')).resolves.toBe(
-      path.resolve(directory, 'images', 'diagram.png'),
+      await realpath(assetPath),
     );
   });
 
