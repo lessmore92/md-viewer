@@ -88,6 +88,35 @@ it('provides Persian empty state and accessible toolbar controls', () => {
   expect(screen.queryByRole('button', { name: /فهرست مطالب/ })).not.toBeInTheDocument();
 });
 
+it('places document tabs in the header and hides platform-only labels', () => {
+  const api = installApi();
+  const { container } = render(<App />);
+  api.opened(payload('First'));
+  api.opened(payload('Second'));
+
+  const header = screen.getByRole('banner');
+  expect(within(header).getByRole('tablist', { name: 'سندهای باز' })).toBeInTheDocument();
+  expect(header.querySelector('.toolbar-workspace > .tab-bar')).toBeInTheDocument();
+  expect(container.querySelector('.workspace-tabs')).not.toBeInTheDocument();
+  expect(screen.queryByText('نسخهٔ دسکتاپ')).not.toBeInTheDocument();
+});
+
+it('renders header actions as titled icon buttons', () => {
+  installApi();
+  render(<App />);
+
+  expect(screen.getByRole('button', { name: 'باز کردن فایل' })).toHaveAttribute(
+    'title',
+    'باز کردن فایل',
+  );
+  expect(screen.getByRole('button', { name: 'حالت کتابخوان' })).toHaveAttribute(
+    'title',
+    'حالت کتابخوان (E-Ink)',
+  );
+  expect(screen.queryByText('باز کردن فایل')).not.toBeInTheDocument();
+  expect(screen.queryByText('کتابخوان')).not.toBeInTheDocument();
+});
+
 it('opens a browser file locally and restores it after remounting', async () => {
   delete (window as Partial<Window>).electronAPI;
   const user = userEvent.setup();

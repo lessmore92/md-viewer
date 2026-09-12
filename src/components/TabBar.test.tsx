@@ -93,7 +93,8 @@ it('toggles split mode with an accessible pressed state', async () => {
     <TabBar tabs={tabs} activeTabId="first" splitTabId={null} narrow={false} {...handlers} />,
   );
 
-  const enableSplit = screen.getByRole('button', { name: 'فعال کردن split' });
+  const enableSplit = screen.getByRole('button', { name: 'فعال کردن نمای دوپنل' });
+  expect(enableSplit).toHaveAttribute('title', 'فعال کردن نمای دوپنل');
   expect(enableSplit).toHaveAttribute('aria-pressed', 'false');
   expect(screen.queryByLabelText('سند پنل دوم')).not.toBeInTheDocument();
   await user.click(enableSplit);
@@ -103,10 +104,17 @@ it('toggles split mode with an accessible pressed state', async () => {
     <TabBar tabs={tabs} activeTabId="first" splitTabId="second" narrow={false} {...handlers} />,
   );
 
-  expect(screen.getByRole('button', { name: 'بستن split' })).toHaveAttribute(
+  expect(screen.getByRole('button', { name: 'بستن نمای دوپنل' })).toHaveAttribute(
     'aria-pressed',
     'true',
   );
+});
+
+it('keeps a disabled Split action visible when only one tab is open on desktop', () => {
+  const handlers = createHandlers();
+  render(<TabBar tabs={[tabs[0]]} activeTabId="first" splitTabId={null} narrow={false} {...handlers} />);
+
+  expect(screen.getByRole('button', { name: 'فعال کردن نمای دوپنل' })).toBeDisabled();
 });
 
 it('offers only non-active tabs to the split selector', async () => {
