@@ -840,6 +840,7 @@ summary {
   flex: 1;
   min-width: 0;
   gap: 8px;
+  background: var(--chrome);
 }
 .tab-strip {
   display: flex;

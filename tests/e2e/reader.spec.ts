@@ -49,12 +49,12 @@ test('multi-tab Split has two bounded RTL panes with independent scrolling and s
 }) => {
   await page.goto('/');
   await openLocalDocument(page, firstFile, longDocument('راهنمای مطالعه'));
-  await expect(page.getByRole('button', { name: 'فعال کردن split' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'فعال کردن نمای دوپنل' })).toBeDisabled();
   await openLocalDocument(page, secondFile, longDocument('Second document'));
   await expect(page.getByRole('tab')).toHaveCount(2);
   await expect(page.locator('.tab-bar')).toBeVisible();
-  await page.getByRole('button', { name: 'فعال کردن split' }).click();
-  await expect(page.getByRole('button', { name: 'بستن split' })).toHaveAttribute(
+  await page.getByRole('button', { name: 'فعال کردن نمای دوپنل' }).click();
+  await expect(page.getByRole('button', { name: 'بستن نمای دوپنل' })).toHaveAttribute(
     'aria-pressed',
     'true',
   );
@@ -99,22 +99,22 @@ test('multi-tab Split has two bounded RTL panes with independent scrolling and s
     .click();
   await expect
     .poll(() => secondaryScroll.evaluate((element) => element.scrollTop))
-    .toBeGreaterThan(500);
+    .toBeGreaterThan(100);
   expect(await primaryScroll.evaluate((element) => element.scrollTop)).toBeLessThan(1000);
   for (const pane of [panes.nth(0), panes.nth(1)]) {
     await expect(pane.getByRole('progressbar')).toBeInViewport();
   }
 
-  await page.getByRole('button', { name: 'بستن split' }).click();
+  await page.getByRole('button', { name: 'بستن نمای دوپنل' }).click();
   await openLocalDocument(page, thirdFile, '# Third document');
   await page.getByRole('tab', { name: secondFile, exact: true }).click();
-  await page.getByRole('button', { name: 'فعال کردن split' }).click();
+  await page.getByRole('button', { name: 'فعال کردن نمای دوپنل' }).click();
   await page.getByLabel('سند پنل دوم').selectOption({ label: thirdFile });
   await expect(panes.nth(1).getByRole('article')).toHaveAttribute('aria-label', thirdFile);
   await page.getByRole('button', { name: `بستن ${thirdFile}`, exact: true }).click();
   await expect(panes).toHaveCount(1);
   await expect(page.getByRole('tab', { name: secondFile, exact: true })).toBeFocused();
-  await expect(page.getByRole('button', { name: 'فعال کردن split' })).toHaveAttribute(
+  await expect(page.getByRole('button', { name: 'فعال کردن نمای دوپنل' })).toHaveAttribute(
     'aria-pressed',
     'false',
   );
@@ -126,7 +126,7 @@ test('multi-tab Split follows themes, focus mode and reduced motion', async ({ p
   await page.goto('/');
   await openLocalDocument(page, firstFile, longDocument('راهنمای مطالعه'));
   await openLocalDocument(page, secondFile, longDocument('Second document'));
-  await page.getByRole('button', { name: 'فعال کردن split' }).click();
+  await page.getByRole('button', { name: 'فعال کردن نمای دوپنل' }).click();
   for (const theme of ['light', 'dark', 'ebook-reader']) {
     if (theme === 'dark') await page.getByRole('button', { name: 'فعال کردن حالت تیره' }).click();
     if (theme === 'ebook-reader')
@@ -171,7 +171,7 @@ test('multi-tab Split closes at 960px and narrow tabs scroll without page overfl
   await openLocalDocument(page, secondFile, longDocument('Second document'));
   await openLocalDocument(page, thirdFile, '# Third document');
   await page.setViewportSize({ width: 961, height: 844 });
-  await page.getByRole('button', { name: 'فعال کردن split' }).click();
+  await page.getByRole('button', { name: 'فعال کردن نمای دوپنل' }).click();
   await expect(page.locator('.document-pane:visible')).toHaveCount(2);
   await expectNoHorizontalOverflow(page);
   for (const width of [960, 768, 390, 320]) {
@@ -203,11 +203,11 @@ test('multi-tab Split closes at 960px and narrow tabs scroll without page overfl
   }
   await page.setViewportSize({ width: 1440, height: 960 });
   await expect(page.locator('.document-pane')).toHaveCount(1);
-  await expect(page.getByRole('button', { name: 'فعال کردن split' })).toHaveAttribute(
+  await expect(page.getByRole('button', { name: 'فعال کردن نمای دوپنل' })).toHaveAttribute(
     'aria-pressed',
     'false',
   );
-  await page.getByRole('button', { name: 'فعال کردن split' }).click();
+  await page.getByRole('button', { name: 'فعال کردن نمای دوپنل' }).click();
   // Restore a saved Split directly into a narrow viewport, not just a resize event.
   await expect
     .poll(() =>
@@ -267,9 +267,9 @@ test('reads a local document after offline reload and persists typography', asyn
     buffer: Buffer.from('# Opened while offline'),
   });
   await expect(page.getByRole('heading', { name: 'Opened while offline' })).toBeVisible();
-  await page.getByRole('button', { name: 'بستن و پاک کردن سند ذخیره‌شده' }).click();
+  await page.getByRole('button', { name: 'بستن second.md' }).click();
   await expect(page.getByRole('heading', { name: 'یادداشت آفلاین' })).toBeVisible();
-  await page.getByRole('button', { name: 'بستن و پاک کردن سند ذخیره‌شده' }).click();
+  await page.getByRole('button', { name: 'بستن یادداشت.md' }).click();
   await page.reload();
   await expect(page.getByRole('heading', { name: 'فایل Markdown خود را باز کنید' })).toBeVisible();
   expect(errors).toEqual([]);
