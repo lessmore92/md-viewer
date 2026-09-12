@@ -15,6 +15,26 @@ MD Viewer is a private, GitHub-style Markdown reader for Windows and the web. Bu
 - Navigate long documents with an h1–h3 table of contents.
 - Open `.md` and `.txt` files in the web app, including documents up to 5 MB.
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/light-theme.png" alt="MD Viewer in light theme" width="720" />
+</p>
+
+**Light theme** — a streamlined reading workspace with compact header controls.
+
+<p align="center">
+  <img src="docs/screenshots/dark-theme.png" alt="MD Viewer in dark theme" width="720" />
+</p>
+
+**Dark theme** — a high-contrast version of the same compact workspace for low-light reading.
+
+<p align="center">
+  <img src="docs/screenshots/focus-eink-mode.png" alt="MD Viewer in focus and E-Ink mode" width="720" />
+</p>
+
+**Focus and E-Ink mode** — distraction-free reading with progress, word count, and estimated reading time.
+
 ## Privacy and Security
 
 Your documents stay under your control.
