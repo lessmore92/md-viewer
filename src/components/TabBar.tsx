@@ -85,12 +85,14 @@ export function TabBar({
         <div className="tab-bar-actions">
           <button
             type="button"
-            className="button button-quiet"
+            className="icon-button split-toggle"
+            aria-label={splitEnabled ? 'بستن نمای دوپنل' : 'فعال کردن نمای دوپنل'}
+            title={splitEnabled ? 'بستن نمای دوپنل' : 'فعال کردن نمای دوپنل'}
             aria-pressed={splitEnabled}
+            disabled={tabs.length < 2}
             onClick={onToggleSplit}
           >
-            <Icon name="focus" />
-            {splitEnabled ? 'بستن split' : 'فعال کردن split'}
+            <Icon name="split" />
           </button>
 
           {splitEnabled ? (

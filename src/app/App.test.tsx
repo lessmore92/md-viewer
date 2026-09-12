@@ -129,7 +129,7 @@ it('opens a browser file locally and restores it after remounting', async () => 
   unmount();
   render(<App />);
   expect(screen.getByRole('heading', { name: 'یادداشت من' })).toBeInTheDocument();
-  await user.click(screen.getByRole('button', { name: 'بستن و پاک کردن سند ذخیره‌شده' }));
+  await user.click(screen.getByRole('button', { name: 'بستن note.md' }));
   expect(screen.queryByRole('heading', { name: 'یادداشت من' })).not.toBeInTheDocument();
 });
 
@@ -477,14 +477,14 @@ it('opens multiple documents as tabs and refreshes a duplicate in place', async 
   const user = userEvent.setup();
   render(<App />);
   api.opened(payload('First'));
-  expect(screen.getByRole('button', { name: 'فعال کردن split' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'فعال کردن نمای دوپنل' })).toBeDisabled();
   api.opened(payload('Second'));
   expect(screen.getAllByRole('tab')).toHaveLength(2);
   api.opened({ ...payload('First', '# Updated'), documentId: 'fresh-render-id' });
   expect(screen.getAllByRole('tab')).toHaveLength(2);
   expect(screen.getByRole('tab', { name: 'First.md' })).toHaveAttribute('aria-selected', 'true');
   expect(screen.getByRole('heading', { name: 'Updated' })).toBeInTheDocument();
-  await user.click(screen.getByRole('button', { name: 'فعال کردن split' }));
+  await user.click(screen.getByRole('button', { name: 'فعال کردن نمای دوپنل' }));
   await user.selectOptions(
     screen.getByLabelText('سند پنل دوم'),
     screen.getByRole('option', { name: 'Second.md' }),
@@ -518,7 +518,7 @@ it('clears split when its tab becomes active or closes and allows choosing a dif
   const user = userEvent.setup();
   render(<App />);
   for (const name of ['First', 'Second', 'Third']) api.opened(payload(name));
-  await user.click(screen.getByRole('button', { name: 'فعال کردن split' }));
+  await user.click(screen.getByRole('button', { name: 'فعال کردن نمای دوپنل' }));
   await user.selectOptions(
     screen.getByLabelText('سند پنل دوم'),
     screen.getByRole('option', { name: 'Second.md' }),
@@ -526,11 +526,11 @@ it('clears split when its tab becomes active or closes and allows choosing a dif
   expect(screen.getByRole('article', { name: 'Second.md' })).toBeInTheDocument();
   await user.click(screen.getByRole('tab', { name: 'Second.md' }));
   expect(screen.getAllByRole('article')).toHaveLength(1);
-  await user.click(screen.getByRole('button', { name: 'فعال کردن split' }));
+  await user.click(screen.getByRole('button', { name: 'فعال کردن نمای دوپنل' }));
   await user.click(screen.getByRole('button', { name: 'بستن First.md' }));
   expect(screen.getAllByRole('article')).toHaveLength(1);
-  await user.click(screen.getByRole('button', { name: 'فعال کردن split' }));
-  await user.click(screen.getByRole('button', { name: 'بستن split' }));
+  await user.click(screen.getByRole('button', { name: 'فعال کردن نمای دوپنل' }));
+  await user.click(screen.getByRole('button', { name: 'بستن نمای دوپنل' }));
   expect(screen.getAllByRole('tab')).toHaveLength(2);
   expect(screen.getAllByRole('article')).toHaveLength(1);
 });
@@ -543,7 +543,7 @@ it('persists tabs, activation and split in Electron and clears split on narrow r
   api.opened(payload('First'));
   api.opened(payload('Second'));
   await user.click(screen.getByRole('tab', { name: 'First.md' }));
-  await user.click(screen.getByRole('button', { name: 'فعال کردن split' }));
+  await user.click(screen.getByRole('button', { name: 'فعال کردن نمای دوپنل' }));
   first.unmount();
   const second = render(<App />);
   expect(screen.getAllByRole('article')).toHaveLength(2);
@@ -553,7 +553,7 @@ it('persists tabs, activation and split in Electron and clears split on narrow r
   expect(JSON.parse(localStorage.getItem(workspaceStorageKey)!).splitTabId).toBeNull();
   act(() => resize(false));
   expect(screen.getAllByRole('article')).toHaveLength(1);
-  await user.click(screen.getByRole('button', { name: 'فعال کردن split' }));
+  await user.click(screen.getByRole('button', { name: 'فعال کردن نمای دوپنل' }));
   second.unmount();
   installMedia({ narrow: true });
   render(<App />);
@@ -600,7 +600,7 @@ it('keeps browser uploads and drops as tabs, reuses duplicate content and closes
   await user.upload(screen.getByLabelText('انتخاب فایل متنی'), file());
   expect(screen.getAllByRole('tab')).toHaveLength(2);
   expect(screen.getByRole('tab', { name: 'note.md' })).toHaveAttribute('aria-selected', 'true');
-  await user.click(screen.getByRole('button', { name: 'بستن و پاک کردن سند ذخیره‌شده' }));
+  await user.click(screen.getByRole('button', { name: 'بستن note.md' }));
   expect(screen.getByRole('article', { name: 'drop.md' })).toBeInTheDocument();
   expect(screen.getAllByRole('tab')).toHaveLength(1);
 });
@@ -638,7 +638,7 @@ it('retains independent scroll positions and scoped navigation across tabs and s
   fireEvent.scroll(primary, { target: { scrollTop: 580 } });
   await user.click(screen.getByRole('tab', { name: 'First.md' }));
   await vi.waitFor(() => expect(primary.scrollTop).toBe(240));
-  await user.click(screen.getByRole('button', { name: 'فعال کردن split' }));
+  await user.click(screen.getByRole('button', { name: 'فعال کردن نمای دوپنل' }));
   const secondary = screen.getAllByRole('region', { name: 'محتوای سند' })[1];
   await vi.waitFor(() => expect(secondary.scrollTop).toBe(580));
   const primaryScroll = vi.fn();
@@ -658,7 +658,7 @@ it('retains independent scroll positions and scoped navigation across tabs and s
   expect(primaryScroll).not.toHaveBeenCalled();
   expect(primary.scrollTop).toBe(240);
   fireEvent.scroll(secondary, { target: { scrollTop: 720 } });
-  await user.click(screen.getByRole('button', { name: 'بستن split' }));
+  await user.click(screen.getByRole('button', { name: 'بستن نمای دوپنل' }));
   await user.click(screen.getByRole('tab', { name: 'Second.md' }));
   await vi.waitFor(() => expect(primary.scrollTop).toBe(720));
 });

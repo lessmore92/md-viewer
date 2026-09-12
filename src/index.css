@@ -117,7 +117,7 @@ summary {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px 24px;
+  gap: 10px 16px;
   min-height: 78px;
   padding: 16px 32px;
   border-bottom: 1px solid var(--border);
@@ -127,7 +127,12 @@ summary {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex: 1;
+  flex: none;
+  min-width: 0;
+}
+.toolbar-workspace {
+  display: flex;
+  flex: 1 1 20rem;
   min-width: 0;
 }
 .toolbar-brand {
@@ -146,7 +151,7 @@ summary {
 .toolbar-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   flex-shrink: 0;
 }
 .button {
@@ -433,20 +438,6 @@ summary {
 .brand-caption {
   color: var(--muted);
   font-size: 11px;
-}
-.document-name {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  gap: 8px;
-  margin-inline-start: 12px;
-  padding-inline-start: 20px;
-  border-inline-start: 1px solid var(--border);
-}
-.document-name .toolbar-filename {
-  font-size: 12px;
-  font-weight: 400;
-  max-width: 24ch;
 }
 .icon-button {
   display: inline-flex;
@@ -744,13 +735,6 @@ summary {
   .toolbar-document {
     gap: 8px;
   }
-  .document-name {
-    margin-inline-start: 0;
-    padding-inline-start: 8px;
-  }
-  .document-name .toolbar-filename {
-    max-width: 13ch;
-  }
   .reading-toolbar {
     padding: 10px 20px;
     flex-wrap: wrap;
@@ -786,33 +770,12 @@ summary {
   .brand-caption {
     display: none;
   }
-  .document-name {
-    order: 1;
-    flex-basis: 100%;
-    border: 0;
-    padding: 0;
-    gap: 2px;
-  }
-  .document-name .toolbar-filename {
-    max-width: 18ch;
-  }
-  .document-name .icon-button {
-    width: 28px;
-    height: 24px;
-  }
-  .toolbar-actions .button-primary {
-    font-size: 12px;
-    padding: 8px;
-  }
-  .toolbar-actions .button-primary svg {
-    display: none;
-  }
   .toolbar-actions .icon-button {
     width: 32px;
   }
-  .toolbar-actions .install-button {
-    font-size: 0;
-    padding: 5px;
+  .toolbar-workspace {
+    order: 1;
+    flex-basis: 100%;
   }
   .reading-toolbar {
     padding: 8px 12px;
@@ -870,23 +833,13 @@ summary {
   }
 }
 
-/* Keep workspace chrome fixed while each document owns its scrolling region. */
-.workspace-tabs {
-  display: flex;
-  align-items: center;
-  flex: none;
-  min-width: 0;
-  border-bottom: 1px solid var(--border);
-  background: var(--chrome);
-}
+/* Keep workspace tabs inside the fixed header while each document owns its scrolling region. */
 .tab-bar {
   display: flex;
   align-items: center;
   flex: 1;
   min-width: 0;
-  gap: 16px;
-  padding: 6px 24px;
-  background: var(--chrome);
+  gap: 8px;
 }
 .tab-strip {
   display: flex;
@@ -955,8 +908,8 @@ summary {
   display: flex;
   align-items: center;
   flex: none;
-  gap: 12px;
-  padding-inline-start: 16px;
+  gap: 8px;
+  padding-inline-start: 8px;
   border-inline-start: 1px solid var(--border);
 }
 .tab-bar-actions .button[aria-pressed='true'] {
@@ -983,13 +936,6 @@ summary {
   font: inherit;
   text-overflow: ellipsis;
   cursor: pointer;
-}
-.workspace-tabs > .button:disabled {
-  flex: none;
-  margin-inline-end: 28px;
-  opacity: 0.45;
-  cursor: default;
-  background: transparent;
 }
 .workspace-panes,
 .split-layout {
@@ -1061,7 +1007,7 @@ summary {
 .focus-mode :is(.workspace-panes, .split-layout) {
   grid-template-columns: minmax(0, 1fr) !important;
 }
-.focus-mode :is(.workspace-tabs, .tab-bar),
+.focus-mode .tab-bar,
 .focus-mode .document-pane + .document-pane {
   display: none !important;
 }
@@ -1077,7 +1023,6 @@ summary {
     /* Override App's inline grid while the media-query listener catches up. */
     grid-template-columns: minmax(0, 1fr) !important;
   }
-  .workspace-tabs > .button,
   .tab-bar-actions,
   .document-pane + .document-pane {
     display: none !important;

@@ -286,7 +286,6 @@ export default function App() {
       ) : null}
       {!focus ? (
         <Toolbar
-          fileName={doc?.fileName}
           dark={theme === 'dark'}
           ebook={theme === 'ebook-reader'}
           hasHeadings={hasHeadings}
@@ -295,7 +294,6 @@ export default function App() {
           offlineLabel={offline.label}
           offlineReady={offline.ready}
           onInstall={offline.install}
-          onClose={doc && !window.electronAPI ? closeDocument : undefined}
           onOpen={() => void openDocument()}
           onToggleTheme={() => changeTheme(theme === 'dark' ? 'light' : 'dark')}
           onToggleEbook={() =>
@@ -306,7 +304,20 @@ export default function App() {
           onToggleSidebar={() =>
             narrow ? setDrawerOpen((value) => !value) : setSidebarVisible((value) => !value)
           }
-        />
+        >
+          {workspace.tabs.length > 0 ? (
+            <TabBar
+              tabs={workspace.tabs}
+              activeTabId={workspace.activeTabId}
+              splitTabId={workspace.splitTabId}
+              narrow={narrow}
+              onActivate={activateWorkspaceTab}
+              onClose={closeWorkspaceTab}
+              onToggleSplit={toggleSplit}
+              onSelectSplit={(tabId) => setWorkspace((current) => setSplitTab(current, tabId))}
+            />
+          ) : null}
+        </Toolbar>
       ) : (
         <div className="focus-header">
           <bdi>{doc?.fileName}</bdi>
@@ -334,26 +345,6 @@ export default function App() {
               setDrawerOpen(false);
             }}
           />
-        </div>
-      ) : null}
-      {workspace.tabs.length > 0 && !focus ? (
-        <div className="workspace-tabs">
-          <TabBar
-            tabs={workspace.tabs}
-            activeTabId={workspace.activeTabId}
-            splitTabId={workspace.splitTabId}
-            narrow={narrow || workspace.tabs.length < 2}
-            onActivate={activateWorkspaceTab}
-            onClose={closeWorkspaceTab}
-            onToggleSplit={toggleSplit}
-            onSelectSplit={(tabId) => setWorkspace((current) => setSplitTab(current, tabId))}
-          />
-          {!narrow && workspace.tabs.length < 2 ? (
-            <button className="button button-quiet" type="button" disabled aria-pressed={false}>
-              <Icon name="focus" />
-              فعال کردن split
-            </button>
-          ) : null}
         </div>
       ) : null}
       {storageError ? (
@@ -392,7 +383,7 @@ export default function App() {
             onOpen={() => void openDocument()}
             onOpenSample={openSample}
             onDropFile={(file) => void openBrowserFile(file)}
-            offlineLabel={offline.label}
+            offlineLabel={offline.label ?? undefined}
           />
         </div>
         {secondaryTab && !narrow ? (

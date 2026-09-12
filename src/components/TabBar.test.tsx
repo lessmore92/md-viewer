@@ -112,7 +112,9 @@ it('toggles split mode with an accessible pressed state', async () => {
 
 it('keeps a disabled Split action visible when only one tab is open on desktop', () => {
   const handlers = createHandlers();
-  render(<TabBar tabs={[tabs[0]]} activeTabId="first" splitTabId={null} narrow={false} {...handlers} />);
+  render(
+    <TabBar tabs={[tabs[0]]} activeTabId="first" splitTabId={null} narrow={false} {...handlers} />,
+  );
 
   expect(screen.getByRole('button', { name: 'فعال کردن نمای دوپنل' })).toBeDisabled();
 });

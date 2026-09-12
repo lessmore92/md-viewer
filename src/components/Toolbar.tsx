@@ -1,16 +1,16 @@
+import type { ReactNode } from 'react';
 import { Icon } from './Icon';
 
 interface ToolbarProps {
-  fileName?: string;
+  children?: ReactNode;
   dark: boolean;
   ebook: boolean;
   hasHeadings: boolean;
   sidebarOpen: boolean;
   sidebarId: string;
-  offlineLabel: string;
+  offlineLabel: string | null;
   offlineReady: boolean;
   onInstall?: () => Promise<void>;
-  onClose?: () => void;
   onOpen: () => void;
   onToggleTheme: () => void;
   onToggleEbook: () => void;
@@ -18,7 +18,7 @@ interface ToolbarProps {
 }
 
 export function Toolbar({
-  fileName,
+  children,
   dark,
   ebook,
   hasHeadings,
@@ -27,7 +27,6 @@ export function Toolbar({
   offlineLabel,
   offlineReady,
   onInstall,
-  onClose,
   onOpen,
   onToggleTheme,
   onToggleEbook,
@@ -49,49 +48,40 @@ export function Toolbar({
           </span>
           <span className="brand-caption">فضایی برای خواندن</span>
         </div>
-        {fileName ? (
-          <div className="document-name">
-            <bdi className="toolbar-filename" title={fileName}>
-              {fileName}
-            </bdi>
-            {onClose ? (
-              <button
-                className="icon-button"
-                type="button"
-                onClick={onClose}
-                aria-label="بستن و پاک کردن سند ذخیره‌شده"
-                title="بستن و پاک کردن سند ذخیره‌شده"
-              >
-                <Icon name="close" width="14" height="14" />
-              </button>
-            ) : null}
-          </div>
-        ) : null}
       </div>
+      {children ? <div className="toolbar-workspace">{children}</div> : null}
       <div className="toolbar-actions">
-        <span className={`offline-badge${offlineReady ? ' is-ready' : ''}`}>
-          <span aria-hidden="true" />
-          {offlineLabel}
-        </span>
+        {offlineLabel ? (
+          <span className={`offline-badge${offlineReady ? ' is-ready' : ''}`}>
+            <span aria-hidden="true" />
+            {offlineLabel}
+          </span>
+        ) : null}
         {onInstall ? (
           <button
-            className="button button-quiet install-button"
+            className="icon-button install-button"
             onClick={() => void onInstall()}
             type="button"
+            aria-label="نصب برنامه"
+            title="نصب برنامه"
           >
             <Icon name="download" />
-            نصب برنامه
           </button>
         ) : null}
-        <button className="button button-primary" onClick={onOpen} type="button">
+        <button
+          className="icon-button open-button"
+          onClick={onOpen}
+          type="button"
+          aria-label="باز کردن فایل"
+          title="باز کردن فایل"
+        >
           <Icon name="open" />
-          باز کردن فایل
         </button>
         {hasHeadings ? (
           <button
             className="icon-button outline-toggle"
             aria-label={sidebarOpen ? 'پنهان کردن فهرست مطالب' : 'نمایش فهرست مطالب'}
-            title="فهرست مطالب"
+            title={sidebarOpen ? 'پنهان کردن فهرست مطالب' : 'نمایش فهرست مطالب'}
             aria-expanded={sidebarOpen}
             aria-controls={sidebarOpen ? sidebarId : undefined}
             onClick={onToggleSidebar}
@@ -101,7 +91,7 @@ export function Toolbar({
           </button>
         ) : null}
         <button
-          className="button button-quiet ebook-toggle"
+          className="icon-button ebook-toggle"
           aria-label="حالت کتابخوان"
           aria-pressed={ebook}
           title={ebook ? 'بازگشت به ظاهر قبلی' : 'حالت کتابخوان (E-Ink)'}
@@ -109,7 +99,6 @@ export function Toolbar({
           type="button"
         >
           <Icon name="book" />
-          کتابخوان
         </button>
         <button
           className="icon-button theme-toggle"

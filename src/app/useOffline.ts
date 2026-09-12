@@ -75,7 +75,7 @@ export function useOffline() {
     }
   };
   const label = window.electronAPI
-    ? 'نسخهٔ دسکتاپ'
+    ? null
     : ready
       ? online
         ? 'آمادهٔ آفلاین'
@@ -84,6 +84,6 @@ export function useOffline() {
         ? 'ذخیرهٔ آفلاین در دسترس نیست'
         : supported
           ? 'آماده‌سازی آفلاین…'
-          : 'نسخهٔ وب';
+          : null;
   return { label, ready, install: installPrompt ? install : undefined };
 }
