@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { WorkspaceTab } from '../app/workspace';
@@ -68,6 +68,23 @@ it('marks the active tab, lets people activate another tab, and closes by file n
   await user.click(screen.getByRole('button', { name: 'بستن First.md' }));
   expect(handlers.onClose).toHaveBeenCalledWith('first');
   expect(handlers.onActivate).toHaveBeenCalledTimes(1);
+});
+
+it('closes a tab on middle click without activating it', () => {
+  const handlers = createHandlers();
+  render(<TabBar tabs={tabs} activeTabId="first" splitTabId={null} narrow={false} {...handlers} />);
+
+  const secondTab = screen.getByRole('tab', { name: 'Second.md' });
+  fireEvent.mouseDown(secondTab, { button: 1 });
+  fireEvent(secondTab, new MouseEvent('auxclick', { button: 1, bubbles: true }));
+  expect(handlers.onClose).toHaveBeenCalledWith('second');
+  expect(handlers.onActivate).not.toHaveBeenCalled();
+
+  fireEvent(
+    screen.getByRole('tab', { name: 'Third.md' }),
+    new MouseEvent('auxclick', { button: 2, bubbles: true }),
+  );
+  expect(handlers.onClose).toHaveBeenCalledTimes(1);
 });
 
 it('does not reference panels that the standalone tab bar does not render', () => {

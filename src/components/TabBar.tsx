@@ -47,7 +47,18 @@ export function TabBar({
           const fileName = tab.document.fileName;
 
           return (
-            <div key={tab.tabId} className="tab-chip">
+            <div
+              key={tab.tabId}
+              className="tab-chip"
+              onMouseDown={(event) => {
+                // Suppress Chromium's middle-click autoscroll mode.
+                if (event.button === 1) event.preventDefault();
+              }}
+              onAuxClick={(event) => {
+                if (event.button !== 1) return;
+                onClose(tab.tabId);
+              }}
+            >
               <button
                 type="button"
                 role="tab"
