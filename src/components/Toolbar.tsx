@@ -12,6 +12,8 @@ interface ToolbarProps {
   offlineReady: boolean;
   onInstall?: () => Promise<void>;
   onOpen: () => void;
+  /** When absent the find button is hidden (no document is open). */
+  onFind?: () => void;
   onToggleTheme: () => void;
   onToggleEbook: () => void;
   onToggleSidebar: () => void;
@@ -28,6 +30,7 @@ export function Toolbar({
   offlineReady,
   onInstall,
   onOpen,
+  onFind,
   onToggleTheme,
   onToggleEbook,
   onToggleSidebar,
@@ -77,6 +80,17 @@ export function Toolbar({
         >
           <Icon name="open" />
         </button>
+        {onFind ? (
+          <button
+            className="icon-button find-toggle"
+            onClick={onFind}
+            type="button"
+            aria-label="جستجو در سند"
+            title="جستجو در سند (Ctrl+F)"
+          >
+            <Icon name="search" />
+          </button>
+        ) : null}
         {hasHeadings ? (
           <button
             className="icon-button outline-toggle"

@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { IPC, type DocumentPayload } from '../../electron/contracts';
+import { IPC, type DocumentPayload, type SaveDocumentRequest } from '../../electron/contracts';
 
 const electron = vi.hoisted(() => ({
   exposeInMainWorld: vi.fn(),
@@ -25,6 +25,7 @@ await import('../../electron/preload');
 
 interface ExposedAPI {
   selectDocument(): Promise<DocumentPayload | null>;
+  saveDocument(request: SaveDocumentRequest): Promise<DocumentPayload | null>;
   openExternal(url: string): Promise<boolean>;
   copyText(text: string): Promise<boolean>;
   assetUrl(documentId: string, relativePath: string): string;
@@ -76,17 +77,25 @@ describe('preload bridge', () => {
   });
 
   it('exposes only intent-specific IPC invocations', async () => {
+    const request: SaveDocumentRequest = {
+      filePath: 'C:\\docs\\README.md',
+      content: '# Readme',
+      documentId: 'document-id',
+    };
     electron.invoke
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(true)
       .mockResolvedValueOnce(true);
 
     await expect(api.selectDocument()).resolves.toBeNull();
+    await expect(api.saveDocument(request)).resolves.toBeNull();
     await expect(api.openExternal('https://example.com')).resolves.toBe(true);
     await expect(api.copyText('const x = 1')).resolves.toBe(true);
 
     expect(electron.invoke.mock.calls).toEqual([
       [IPC.selectDocument],
+      [IPC.saveDocument, request],
       [IPC.openExternal, 'https://example.com'],
       [IPC.copyText, 'const x = 1'],
     ]);

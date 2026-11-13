@@ -14,6 +14,10 @@ const paths = {
   book: 'M12 5c-3-2-6-2-10-1v15c4-1 7-1 10 1 3-2 6-2 10-1V4c-4-1-7-1-10 1Zm0 0v15',
   clock: 'M12 7v5l3 2M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
   check: 'm5 12 4 4L19 6',
+  search: 'M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm2 10-4.35-4.35',
+  edit: 'M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4Z',
+  'chevron-up': 'm18 15-6-6-6 6',
+  'chevron-down': 'm6 9 6 6 6-6',
 } as const;
 
 export function Icon({ name, ...props }: SVGProps<SVGSVGElement> & { name: keyof typeof paths }) {

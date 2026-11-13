@@ -37,6 +37,8 @@
   --button-hover: #eaeef2;
   --danger: #d1242f;
   --danger-muted: #ffebe9;
+  --attention: #9a6700;
+  --attention-muted: #fff8c5;
   --scrollbar: #8c959f;
   font-family: Vazirmatn, Tahoma, Arial, sans-serif;
   background: var(--surface);
@@ -65,6 +67,7 @@
   --button-hover: oklch(35.58% 0.0343 255.3);
   --success: oklch(79.17% 0.0683 158.57);
   --attention: oklch(81.47% 0.0849 85.91);
+  --attention-muted: oklch(34% 0.035 85);
   --done: oklch(79.75% 0.0738 295.26);
   --danger: oklch(77.34% 0.0825 15.33);
   --danger-muted: oklch(30.65% 0.0224 344.92);
@@ -1042,6 +1045,135 @@ summary {
   .tab-chip .icon-button {
     width: 36px;
     height: 36px;
+  }
+}
+
+/* --- Find in page --------------------------------------------------------- */
+.find-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--chrome);
+}
+.find-input {
+  flex: 1;
+  min-width: 120px;
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid var(--control-border);
+  border-radius: 8px;
+  background: var(--control);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+.find-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.find-input::placeholder {
+  color: var(--muted);
+}
+.find-count {
+  min-width: 52px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+  white-space: nowrap;
+}
+mark.find-hit {
+  padding: 0 1px;
+  border-radius: 2px;
+  background: var(--attention-muted);
+  color: inherit;
+}
+mark.find-hit.is-active {
+  background: var(--attention);
+  color: var(--primary-ink);
+}
+
+/* --- Markdown editing ------------------------------------------------------ */
+.heading-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.heading-actions .icon-button {
+  width: 30px;
+  height: 30px;
+}
+.button-compact {
+  min-height: 30px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.dirty-label {
+  color: var(--attention);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.save-error {
+  color: var(--danger);
+  font-size: 11px;
+}
+.markdown-editor {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 55vh;
+  padding: 28px 40px 48px;
+  border: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: ui-monospace, 'Cascadia Code', Consolas, 'Liberation Mono', monospace;
+  font-size: 15px;
+  line-height: 1.8;
+  resize: vertical;
+  overflow-wrap: anywhere;
+}
+.editing-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: 55vh;
+}
+.editing-workspace .markdown-editor {
+  min-height: 100%;
+  border-inline-end: 1px solid var(--border);
+}
+.markdown-preview {
+  min-width: 0;
+  padding: 28px 40px 48px;
+  overflow: auto;
+  background: var(--surface);
+}
+.markdown-preview .markdown-body {
+  max-width: none;
+}
+.markdown-editor:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.focus-mode .document-sheet.is-editing .document-heading {
+  /* Keep save/cancel controls reachable while focus mode hides the heading. */
+  display: flex;
+}
+@media (max-width: 760px) {
+  .editing-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .editing-workspace .markdown-editor {
+    min-height: 45vh;
+    border-inline-end: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .markdown-preview {
+    min-height: 35vh;
   }
 }
 

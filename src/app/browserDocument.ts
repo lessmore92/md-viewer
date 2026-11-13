@@ -35,6 +35,18 @@ export function readBrowserFile(file: File): Promise<DocumentPayload> {
   });
 }
 
+export function downloadDocument(fileName: string, content: string): void {
+  const url = URL.createObjectURL(new Blob([content], { type: 'text/markdown;charset=utf-8' }));
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  // Defer revocation so the click-triggered download has a chance to start.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 export function restoreBrowserDocument(): DocumentPayload | null {
   try {
     const value = JSON.parse(localStorage.getItem(browserDocumentStorageKey) ?? 'null');

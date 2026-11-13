@@ -1,9 +1,10 @@
 /// <reference types="vite/client" />
 
-import type { DocumentPayload } from '../electron/contracts';
+import type { DocumentPayload, SaveDocumentRequest } from '../electron/contracts';
 
 interface ElectronAPI {
   selectDocument(): Promise<DocumentPayload | null>;
+  saveDocument(request: SaveDocumentRequest): Promise<DocumentPayload | null>;
   openExternal(url: string): Promise<boolean>;
   copyText(text: string): Promise<boolean>;
   assetUrl(documentId: string, relativePath: string): string;

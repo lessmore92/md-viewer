@@ -140,6 +140,20 @@ export function openInWorkspace(
   };
 }
 
+export function updateTabDocument(
+  workspace: WorkspaceState,
+  tabId: string,
+  document: DocumentPayload,
+): WorkspaceState {
+  if (!workspace.tabs.some((tab) => tab.tabId === tabId)) return workspace;
+  return {
+    ...workspace,
+    tabs: workspace.tabs.map((tab) =>
+      tab.tabId === tabId ? { ...tab, document, documentKey: documentKey(document) } : tab,
+    ),
+  };
+}
+
 export function activateTab(workspace: WorkspaceState, tabId: string): WorkspaceState {
   if (!workspace.tabs.some((tab) => tab.tabId === tabId)) return workspace;
   return {

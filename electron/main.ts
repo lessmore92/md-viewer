@@ -13,10 +13,14 @@ import {
   screen,
   shell,
 } from 'electron';
-import { IPC, type DocumentPayload } from './contracts';
+import { IPC, type DocumentPayload, type SaveDocumentRequest } from './contracts';
 import { writeClipboardText } from './clipboard';
 import { createDocumentDelivery } from './document-delivery';
-import { readMarkdownDocument, resolveDocumentAsset } from './document-service';
+import {
+  readMarkdownDocument,
+  resolveDocumentAsset,
+  writeMarkdownDocument,
+} from './document-service';
 import { findMarkdownArgument } from './file-arguments';
 import { isTrustedSender, parseExternalUrl } from './security';
 import { createWindowStateTracker, loadWindowState, saveWindowState } from './window-state';
@@ -251,6 +255,26 @@ function registerIpcHandlers(): void {
   ipcMain.handle(IPC.selectDocument, async (event) => {
     requireTrustedSender(event);
     return selectDocument();
+  });
+
+  ipcMain.handle(IPC.saveDocument, async (event, value: unknown) => {
+    requireTrustedSender(event);
+    if (typeof value !== 'object' || value === null) return null;
+
+    const { filePath, content, documentId } = value as Partial<
+      Record<keyof SaveDocumentRequest, unknown>
+    >;
+    if (
+      typeof filePath !== 'string' ||
+      !filePath ||
+      typeof content !== 'string' ||
+      typeof documentId !== 'string' ||
+      !documentId
+    ) {
+      return null;
+    }
+
+    return enqueueDocumentTask(() => writeMarkdownDocument(filePath, content, documentId));
   });
 
   ipcMain.handle(IPC.openExternal, async (event, value: unknown) => {

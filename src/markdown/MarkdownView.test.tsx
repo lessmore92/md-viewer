@@ -20,6 +20,7 @@ function installElectronApi() {
       return () => undefined;
     }),
     selectDocument: vi.fn(async () => null),
+    saveDocument: vi.fn(async () => null),
   };
 
   return { assetUrl, openExternal };

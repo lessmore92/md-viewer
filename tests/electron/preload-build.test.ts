@@ -12,6 +12,11 @@ it('loads the built preload in the sandbox and exposes working intent-only opera
   let api:
     | {
         selectDocument(): Promise<null>;
+        saveDocument(request: {
+          filePath: string;
+          content: string;
+          documentId: string;
+        }): Promise<null>;
         openExternal(url: string): Promise<boolean>;
         copyText(text: string): Promise<boolean>;
         assetUrl(documentId: string, relativePath: string): string;
@@ -47,13 +52,21 @@ it('loads the built preload in the sandbox and exposes working intent-only opera
     'copyText',
     'onDocumentOpened',
     'openExternal',
+    'saveDocument',
     'selectDocument',
   ]);
+  const saveRequest = {
+    filePath: 'C:\\docs\\README.md',
+    content: '# Readme',
+    documentId: 'document-id',
+  };
   await expect(api?.selectDocument()).resolves.toBeNull();
+  await expect(api?.saveDocument(saveRequest)).resolves.toBe(true);
   await expect(api?.openExternal('https://example.com/')).resolves.toBe(true);
   await expect(api?.copyText('const x = 1')).resolves.toBe(true);
   expect(invocations).toEqual([
     ['document:select'],
+    ['document:save', saveRequest],
     ['navigation:open-external', 'https://example.com/'],
     ['clipboard:copy-text', 'const x = 1'],
   ]);

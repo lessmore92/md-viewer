@@ -1,8 +1,9 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { IPC, type DocumentPayload } from './contracts';
+import { IPC, type DocumentPayload, type SaveDocumentRequest } from './contracts';
 
 contextBridge.exposeInMainWorld('electronAPI', {
   selectDocument: () => ipcRenderer.invoke(IPC.selectDocument),
+  saveDocument: (request: SaveDocumentRequest) => ipcRenderer.invoke(IPC.saveDocument, request),
   openExternal: (url: string) => ipcRenderer.invoke(IPC.openExternal, url),
   copyText: (text: string) => ipcRenderer.invoke(IPC.copyText, text),
   assetUrl: (documentId: string, relativePath: string) => {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from
 import type { CSSProperties } from 'react';
 import type { DocumentPayload } from '../../electron/contracts';
 import { DocumentPane } from '../components/DocumentPane';
+import type { PaneId } from '../components/DocumentPane';
 import { TabBar } from '../components/TabBar';
 import {
   activateTab,
@@ -12,6 +13,7 @@ import {
   saveRestoreTabs,
   saveWorkspace,
   setSplitTab,
+  updateTabDocument,
 } from './workspace';
 import type { WorkspaceState } from './workspace';
 import { Toolbar } from '../components/Toolbar';
@@ -19,7 +21,7 @@ import { ReadingToolbar } from '../components/ReadingToolbar';
 import { Icon } from '../components/Icon';
 import { applyTheme, readTheme, readStandardTheme, saveTheme } from './theme';
 import type { Theme, StandardTheme } from './theme';
-import { acceptedFiles, readBrowserFile } from './browserDocument';
+import { acceptedFiles, downloadDocument, readBrowserFile } from './browserDocument';
 import { defaultPreferences, readPreferences, savePreferences } from './readingPreferences';
 import type { ReadingPreferences } from './readingPreferences';
 import { useOffline } from './useOffline';
@@ -71,6 +73,55 @@ export default function App() {
   const lastPersistedWorkspace = useRef<WorkspaceState | null>(null);
   const outlineId = useId();
   const [hasHeadings, setHasHeadings] = useState(false);
+  const [findPane, setFindPane] = useState<PaneId | null>(null);
+  const [findSignal, setFindSignal] = useState(0);
+  const [activePane, setActivePane] = useState<PaneId>('primary');
+  // Tabs holding unsaved editor drafts; consulted before destructive actions.
+  const dirtyTabs = useRef(new Set<string>());
+
+  const requestFind = useCallback(() => {
+    const order: PaneId[] =
+      activePane === 'secondary' ? ['secondary', 'primary'] : ['primary', 'secondary'];
+    const target = order.find((pane) => (pane === 'secondary' ? secondaryTab : primaryTab));
+    if (!target) return;
+    setFindPane(target);
+    setFindSignal((value) => value + 1);
+  }, [activePane, primaryTab, secondaryTab]);
+
+  const handleDirtyChange = useCallback((tabId: string, dirty: boolean) => {
+    if (dirty) dirtyTabs.current.add(tabId);
+    else dirtyTabs.current.delete(tabId);
+  }, []);
+
+  const handleSaveDocument = useCallback(
+    async (tabId: string, text: string) => {
+      const target = workspace.tabs.find((tab) => tab.tabId === tabId);
+      if (!target) return;
+      const current = target.document;
+      const api = window.electronAPI;
+      let saved: DocumentPayload;
+      if (api && current.filePath) {
+        const result = await api.saveDocument({
+          filePath: current.filePath,
+          content: text,
+          documentId: current.documentId,
+        });
+        if (!result) throw new Error('Document save failed');
+        saved = result;
+      } else {
+        // Browser sessions and pathless documents can only persist via download.
+        downloadDocument(current.fileName, text);
+        saved = { ...current, content: text };
+      }
+      setWorkspace((state) => updateTabDocument(state, tabId, saved));
+    },
+    [workspace],
+  );
+
+  // The secondary pane unmounts on tab close, split toggle or narrow resize.
+  useEffect(() => {
+    if (findPane === 'secondary' && !(secondaryTab && !narrow)) setFindPane(null);
+  }, [findPane, secondaryTab, narrow]);
 
   const acceptDocument = useCallback((next: DocumentPayload, request?: number) => {
     if (request === undefined) {
@@ -134,10 +185,14 @@ export default function App() {
         event.preventDefault();
         fileInput.current?.click();
       }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
+        event.preventDefault();
+        requestFind();
+      }
     };
     window.addEventListener('keydown', shortcut);
     return () => window.removeEventListener('keydown', shortcut);
-  }, [focus, exitFocus]);
+  }, [focus, exitFocus, requestFind]);
 
   useEffect(() => {
     const pending = pendingRequests.current;
@@ -214,6 +269,15 @@ export default function App() {
   };
 
   const closeWorkspaceTab = (tabId: string) => {
+    const closing = workspace.tabs.find((tab) => tab.tabId === tabId);
+    if (
+      closing &&
+      dirtyTabs.current.has(tabId) &&
+      !window.confirm(`تغییرات ذخیره‌نشدهٔ ${closing.document.fileName} حذف می‌شود. تب بسته شود؟`)
+    ) {
+      return;
+    }
+    dirtyTabs.current.delete(tabId);
     ++latestRequest.current;
     if (tabId === workspace.activeTabId) {
       pendingRequests.current.clear();
@@ -231,6 +295,7 @@ export default function App() {
 
   const activateWorkspaceTab = (tabId: string) => {
     setWorkspace((current) => activateTab(current, tabId));
+    setActivePane('primary');
     setDrawerOpen(false);
   };
 
@@ -295,6 +360,7 @@ export default function App() {
           offlineReady={offline.ready}
           onInstall={offline.install}
           onOpen={() => void openDocument()}
+          onFind={doc ? requestFind : undefined}
           onToggleTheme={() => changeTheme(theme === 'dark' ? 'light' : 'dark')}
           onToggleEbook={() =>
             changeTheme(
@@ -363,7 +429,12 @@ export default function App() {
             secondaryTab && !narrow ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
         }}
       >
-        <div className="document-pane" style={paneStyle}>
+        <div
+          className="document-pane"
+          style={paneStyle}
+          onPointerDownCapture={() => setActivePane('primary')}
+          onFocusCapture={() => setActivePane('primary')}
+        >
           <DocumentPane
             tab={primaryTab}
             paneId="primary"
@@ -384,10 +455,20 @@ export default function App() {
             onOpenSample={openSample}
             onDropFile={(file) => void openBrowserFile(file)}
             offlineLabel={offline.label ?? undefined}
+            findOpen={findPane === 'primary'}
+            findFocusSignal={findSignal}
+            onFindClose={() => setFindPane(null)}
+            onSave={handleSaveDocument}
+            onDirtyChange={handleDirtyChange}
           />
         </div>
         {secondaryTab && !narrow ? (
-          <div className="document-pane" style={paneStyle}>
+          <div
+            className="document-pane"
+            style={paneStyle}
+            onPointerDownCapture={() => setActivePane('secondary')}
+            onFocusCapture={() => setActivePane('secondary')}
+          >
             <DocumentPane
               tab={secondaryTab}
               paneId="secondary"
@@ -398,6 +479,9 @@ export default function App() {
               onClose={() => closeWorkspaceTab(secondaryTab.tabId)}
               onScrollTop={(value) => updateScrollTop(secondaryTab.tabId, value)}
               onDropFile={(file) => void openBrowserFile(file)}
+              findOpen={findPane === 'secondary'}
+              findFocusSignal={findSignal}
+              onFindClose={() => setFindPane(null)}
             />
           </div>
         ) : null}

@@ -28,9 +28,18 @@ function installApi() {
   const listeners = new Set<(document: DocumentPayload) => void>();
   const unsubscribes: ReturnType<typeof vi.fn>[] = [];
   const selectDocument = vi.fn<() => Promise<DocumentPayload | null>>(async () => null);
+  const saveDocument = vi.fn(
+    async (request: { filePath: string; content: string; documentId: string }) => ({
+      fileName: request.filePath.split('\\').pop() ?? request.filePath,
+      filePath: request.filePath,
+      content: request.content,
+      documentId: request.documentId,
+    }),
+  );
   window.electronAPI = {
     copyText: vi.fn(async () => true),
     selectDocument,
+    saveDocument,
     openExternal: vi.fn(async () => true),
     assetUrl: (id, path) => `md-asset://local/${id}/${path}`,
     onDocumentOpened: vi.fn((callback) => {
@@ -42,6 +51,7 @@ function installApi() {
   };
   return {
     selectDocument,
+    saveDocument,
     unsubscribes,
     opened: (doc: DocumentPayload) =>
       act(() => {
@@ -661,6 +671,77 @@ it('retains independent scroll positions and scoped navigation across tabs and s
   await user.click(screen.getByRole('button', { name: 'بستن نمای دوپنل' }));
   await user.click(screen.getByRole('tab', { name: 'Second.md' }));
   await vi.waitFor(() => expect(primary.scrollTop).toBe(720));
+});
+
+it('finds text in the page, cycles matches and closes with Escape', async () => {
+  const api = installApi();
+  const user = userEvent.setup();
+  render(<App />);
+  api.opened(payload('Find', 'Alpha beta alpha BETA alpha'));
+
+  await user.keyboard('{Control>}f{/Control}');
+  const bar = screen.getByRole('search', { name: 'جستجو در سند' });
+  const input = within(bar).getByRole('searchbox', { name: 'متن جستجو' });
+  expect(input).toHaveFocus();
+
+  await user.type(input, 'alpha');
+  expect(within(bar).getByRole('status')).toHaveTextContent('۱ از ۳');
+  const article = screen.getByRole('article', { name: 'Find.md' });
+  expect(article.querySelectorAll('mark.find-hit')).toHaveLength(3);
+
+  await user.keyboard('{Enter}');
+  expect(within(bar).getByRole('status')).toHaveTextContent('۲ از ۳');
+  await user.keyboard('{Shift>}{Enter}{/Shift}');
+  expect(within(bar).getByRole('status')).toHaveTextContent('۱ از ۳');
+
+  await user.keyboard('{Escape}');
+  expect(screen.queryByRole('search')).not.toBeInTheDocument();
+  expect(article.querySelectorAll('mark.find-hit')).toHaveLength(0);
+});
+
+it('edits a document and saves it back through the desktop bridge', async () => {
+  const api = installApi();
+  const user = userEvent.setup();
+  render(<App />);
+  api.opened(payload('Notes', '# Title\n\nOld text'));
+
+  await user.click(screen.getByRole('button', { name: 'ویرایش سند' }));
+  const editor = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'ویرایش Notes.md' });
+  const preview = screen.getByRole('region', { name: 'پیش‌نمایش زنده' });
+  expect(within(preview).getByRole('heading', { name: 'Title' })).toBeInTheDocument();
+  const original = '# Title\n\nOld text';
+  editor.setSelectionRange(original.length, original.length);
+  await user.type(editor, '!');
+  expect(preview).toHaveTextContent('Old text!');
+  expect(screen.getByText('تغییرات ذخیره‌نشده')).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'ذخیره' }));
+  await vi.waitFor(() =>
+    expect(api.saveDocument).toHaveBeenCalledWith({
+      filePath: 'C:\\docs\\Notes.md',
+      content: `${original}!`,
+      documentId: 'Notes',
+    }),
+  );
+  await vi.waitFor(() => expect(screen.getByRole('button', { name: 'ذخیره' })).toBeDisabled());
+
+  await user.click(screen.getByRole('button', { name: 'انصراف' }));
+  expect(screen.getByRole('article', { name: 'Notes.md' })).toHaveTextContent('Old text!');
+});
+
+it('warns before closing a tab with unsaved edits', async () => {
+  const api = installApi();
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  const user = userEvent.setup();
+  render(<App />);
+  api.opened(payload('Draft'));
+
+  await user.click(screen.getByRole('button', { name: 'ویرایش سند' }));
+  await user.type(screen.getByRole('textbox', { name: 'ویرایش Draft.md' }), 'x');
+  await user.click(screen.getByRole('button', { name: 'بستن Draft.md' }));
+
+  expect(confirm).toHaveBeenCalledOnce();
+  expect(screen.getByRole('tab', { name: 'Draft.md' })).toBeInTheDocument();
 });
 
 it('keeps workspace and restore settings usable when storage fails and clears the notice after recovery', async () => {
