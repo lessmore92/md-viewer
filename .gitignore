@@ -16,3 +16,4 @@ build/*
 *.p12
 *.pfx
 .npmrc
+.idea
