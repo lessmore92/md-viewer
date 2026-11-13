@@ -123,7 +123,9 @@ describe('writeMarkdownDocument', () => {
     const first = await readMarkdownDocument(firstPath);
     await readMarkdownDocument(secondPath);
 
-    await expect(writeMarkdownDocument(firstPath, '# Saved first', first.documentId)).resolves.toMatchObject({
+    await expect(
+      writeMarkdownDocument(firstPath, '# Saved first', first.documentId),
+    ).resolves.toMatchObject({
       documentId: first.documentId,
       content: '# Saved first',
     });

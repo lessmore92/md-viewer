@@ -439,7 +439,11 @@ export function DocumentPane({
                       dir={detectDirection(draft)}
                     >
                       <div className="markdown-body">
-                        <MarkdownView content={draft} documentId={doc.documentId} onNavigate={navigate} />
+                        <MarkdownView
+                          content={draft}
+                          documentId={doc.documentId}
+                          onNavigate={navigate}
+                        />
                       </div>
                     </section>
                   </div>
